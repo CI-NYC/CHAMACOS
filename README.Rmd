@@ -1,0 +1,27 @@
+---
+title: "README"
+output: github_document
+date: "2025-02-06"
+---
+
+## CHAMACOS Pesticide Use ReadME
+
+- file `00_data_cleaning.R` contains basic data cleaning BEFORE applying the convex hull shifts, such as:
+  - removing individuals with cancer at baseline
+  - removing individuals with missing values in the years observed variable at time t = 0 (`years_2y_10_5y`) -- this likely means they were not present at this timepoint
+  - keeping only individuals with number of years observed greater than or equal to 1 year, 1.5 years, and 2 years (this is flexible and results may change depending on the filtering done here)
+    - 1 year (n = 317), 1.5 years (n = 310), 2 years (n = 250)
+  - keeping only individuals with use of each pesticide within 1 km (when not using local) but keeping these individuals when using local)
+  - add missing indicators for missing values in baseline variables, impute missing values with mode/median
+  
+- file `01_getting_shifted_convexhull.R` contains code to apply normalization between 0 and 1 and then apply convex hull shifts (1. a multiplicative 20% decrease shift and 2. an additive shift by 10 scaled units)
+  - apply truncation to all 7 exposure variables (truncating at the 95th percentile due to heavy right skew)
+  - normalize each exposure variable between 0 and 1
+  - apply convex hull shifts (1. a multiplicative 20% decrease shift and 2. an additive shift by 10 scaled units)
+  - summary statistics about shifts
+
+- file `02_lmtp.R` contains code to apply lmtp analysis to exposure data using baseline covariates, timevarying covariates at t = 0, exposures at t = 0, and outcome (maternal hypertension) at 10.5 years.
+
+- file `02_lmtp_local.R` contains code to apply lmtp analysis (using local) to exposure data using baseline covariates, timevarying covariates at t = 0, exposures at t = 0, and outcome (maternal hypertension) at 10.5 years.
+
+### Preliminary Results
