@@ -26,14 +26,6 @@ pol <- pol |>
          ) |>
   na.omit() |> # this should not remove any additional
   mutate(across(op_kg_2_year_10_5y:paraq_kg_2_year_10_5y, list(p95 = ~ quantile(., 0.95)))) |> # calculate 95th percentile for each variable
-  # filter(op_kg_2_year_10_5y <= op_kg_2_year_10_5y_p95,
-  #        pyr_kg_2_year_10_5y <= pyr_kg_2_year_10_5y_p95,
-  #        carb_kg_2_year_10_5y <= carb_kg_2_year_10_5y_p95,
-  #        neo_kg_2_year_10_5y <= neo_kg_2_year_10_5y_p95,
-  #        mn_kg_2_year_10_5y <= mn_kg_2_year_10_5y_p95,
-  #        gly_kg_2_year_10_5y <= gly_kg_2_year_10_5y_p95,
-  #        paraq_kg_2_year_10_5y <= paraq_kg_2_year_10_5y_p95
-  #        ) |>
   # truncate any exposures above the 95th percentile for that exposure
   mutate(op_kg_2_year_10_5y = ifelse(op_kg_2_year_10_5y <= op_kg_2_year_10_5y_p95, op_kg_2_year_10_5y, op_kg_2_year_10_5y_p95),
          pyr_kg_2_year_10_5y = ifelse(pyr_kg_2_year_10_5y <= pyr_kg_2_year_10_5y_p95, pyr_kg_2_year_10_5y, pyr_kg_2_year_10_5y_p95),
@@ -80,7 +72,7 @@ ch <- julia_call("ConvexHull", pol)
 round(julia_call("boundary", ch, unlist(pol[1, ])), 3) == round(unlist(pol[1, ]), 3)
 
 # MULTIPLICATIVE SHIFT: Assume we want to perform a 20% shift decrease
-shifted_mult <- as.matrix(mutate(pol, across(c("gly_kg_2_year_10_5y", "paraq_kg_2_year_10_5y"), \(x) x * 0.8)))
+shifted_mult <- as.matrix(mutate(pol, across(everything(), \(x) x * 0.8)))
 shifted_mult_feasible <- shifted_mult
 
 for (i in 1:nrow(pol)) {
@@ -147,11 +139,8 @@ shifted_mult_data[row_indices_paraq, ] |> select(-newid) |> summary()
 # calculating 10 unit shift on normalized scale
 additive_scale <- sapply(pol_unnormalized, function(col) (10 - min(col)) / (max(col) - min(col)))
 
-additive_scale <- additive_scale[6:7]
+shifted_add <- as.matrix(sweep(pol, 2, additive_scale, "-"))
 
-shifted_add <- as.matrix(sweep(pol[6:7], 2, additive_scale, "-"))
-
-shifted_add <- cbind(as.matrix(pol[1:5]), shifted_add)
 shifted_add_feasible <- shifted_add
 
 for (i in 1:nrow(pol)) {

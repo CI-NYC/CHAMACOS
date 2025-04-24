@@ -4,18 +4,18 @@ library(fastDummies)
 for (years in c("1", "1_5", "2"))
 {
 data <- read_csv("data/rudolph_01b.csv") |>
-  filter(cancer_bl == 0) |> # only keep no cancer
+  filter(cancer_bl == 0 | is.na(cancer_bl)) |> # only keep no cancer or missing
   filter(!is.na(years_2y_10_5y)) |> # 445 observations non-missing
   filter(years_2y_10_5y >= case_when(years == "1" ~ 1,
                                      years == "1_5" ~ 1.5,
-                                     years == "2" ~ 2)) #|> # try 1, 1.5, 2
-  # filter(d_op_kg_2_year_10_5y == 1,
-  #        d_pyr_kg_2_year_10_5y == 1,
-  #        d_carb_kg_2_year_10_5y == 1,
-  #        d_neo_kg_2_year_10_5y == 1,
-  #        d_mn_kg_2_year_10_5y == 1,
-  #        d_gly_kg_2_year_10_5y == 1,
-  #        d_paraq_kg_2_year_10_5y == 1)
+                                     years == "2" ~ 2)) |> # try 1, 1.5, 2
+   filter(d_op_kg_2_year_10_5y == 1,
+          d_pyr_kg_2_year_10_5y == 1,
+          d_carb_kg_2_year_10_5y == 1,    
+          d_neo_kg_2_year_10_5y == 1,
+          d_mn_kg_2_year_10_5y == 1,
+          d_gly_kg_2_year_10_5y == 1,
+          d_paraq_kg_2_year_10_5y == 1)
 
 classes <- data |>
   select("newid",
@@ -37,11 +37,10 @@ classes <- data |>
            starts_with("d_neo_") |
            starts_with("d_mn_") |
            starts_with("d_gly_") |
-           starts_with("d_paraq_"),
-         starts_with("d_"),
-           ) 
+           starts_with("d_paraq_")) |>
+  select(newid, ends_with("_10_5y"))
 
-saveRDS(classes_t_1, paste0("data/exposures_7_classes_time_1_years_obs_", years, ".rds"))
+saveRDS(classes, paste0("data/exposures_7_classes_time_1_years_obs_", years, ".rds"))
 
 Mode <- function(x) {
   x <- na.omit(x)
@@ -74,17 +73,18 @@ covars_outcome <- data |>
          #hbpage_bl,
          diab_bl,
          diabage_bl,
+         born_in_usa,
          # cancer variable
          cancer_bl,
          # time-varying covariates
          starts_with("age_"),
-         starts_woth("marstat_"),
-         starts_woth("marcat_"),
-         starts_woth("ipovcat_"),
-         starts_woth("hhagwork_"),
-         starts_woth("work_cat_"),
+         starts_with("marstat_"),
+         starts_with("marcat_"),
+         starts_with("ipovcat_"),
+         starts_with("hhagwork_"),
+         starts_with("work_cat_"),
          # outcome
-         starts_woth("mhtn_"),
+         starts_with("mhtn_"),
          # self report
          starts_with("mhbp"),
          # systolic

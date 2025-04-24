@@ -15,12 +15,12 @@ for (years in c("1"#,
                 #"2"
                 ))
 {
-for (time in c(#"10_5y"#, 
+for (time in c("10_5y"#, 
   #"12y"#, "14y", "16y", "18y", 
-  "mc1" #mc1 doesn't work with 2 years due to low censoring counts
+  #"mc1" #mc1 doesn't work with 2 years due to low censoring counts
 ))
 {
-data_original <- readRDS(here::here(paste0("data/original_data_time_1_years_obs_", years, ".rds"))) |>
+data_original <- readRDS(here::here(paste0("data/original_data_time_1_years_obs_", years, "_last_2_exposures.rds"))) |>
   mutate(censor_10_5y = ifelse(is.na(mhtn_10_5y), 0, 1),
          censor_12y = ifelse(is.na(mhtn_12y), 0, 1),
          censor_14y = ifelse(is.na(mhtn_14y), 0, 1),
@@ -30,7 +30,7 @@ data_original <- readRDS(here::here(paste0("data/original_data_time_1_years_obs_
   as.data.frame() |>
   mutate(conditional_10_5y = ifelse(d_gly_kg_2_year_10_5y == 1 | d_paraq_kg_2_year_10_5y == 1, 1, 0))
 
-data_shifted_mult <- readRDS(here::here(paste0("data/shifted_data_80_percent_time_1_years_obs_", years, ".rds"))) |>
+data_shifted_mult <- readRDS(here::here(paste0("data/shifted_data_80_percent_time_1_years_obs_", years, "_last_2_exposures.rds"))) |>
   mutate(censor_10_5y = 1,
          censor_12y = 1,
          censor_14y = 1,
@@ -40,7 +40,7 @@ data_shifted_mult <- readRDS(here::here(paste0("data/shifted_data_80_percent_tim
   as.data.frame() |>
   mutate(conditional_10_5y = ifelse(d_gly_kg_2_year_10_5y == 1 | d_paraq_kg_2_year_10_5y == 1, 1, 0))
 
-data_shifted_add <- readRDS(here::here(paste0("data/shifted_data_10_scaled_units_time_1_years_obs_", years, ".rds"))) |>
+data_shifted_add <- readRDS(here::here(paste0("data/shifted_data_10_scaled_units_time_1_years_obs_", years, "_last_2_exposures.rds"))) |>
   mutate(censor_10_5y = 1,
          censor_12y = 1,
          censor_14y = 1,
@@ -59,7 +59,7 @@ A <- list(c("op_kg_2_year_10_5y",
        "paraq_kg_2_year_10_5y"
        ))
 
-data_shifted_mult_all <- readRDS(paste0("data/original_data_time_1_years_obs_", years, ".rds")) |>
+data_shifted_mult_all <- readRDS(paste0("data/original_data_time_1_years_obs_", years, "_last_2_exposures.rds")) |>
   mutate(across(all_of(c("gly_kg_2_year_10_5y", "paraq_kg_2_year_10_5y")), ~ . * 0.8)) |>
   mutate(censor_10_5y = 1,
          censor_12y = 1,
@@ -70,7 +70,7 @@ data_shifted_mult_all <- readRDS(paste0("data/original_data_time_1_years_obs_", 
   as.data.frame() |>
   mutate(conditional_10_5y = ifelse(d_gly_kg_2_year_10_5y == 1 | d_paraq_kg_2_year_10_5y == 1, 1, 0))
 
-data_shifted_add_all <- readRDS(paste0("data/original_data_time_1_years_obs_", years, ".rds")) |>
+data_shifted_add_all <- readRDS(paste0("data/original_data_time_1_years_obs_", years, "_last_2_exposures.rds")) |>
   mutate(across(all_of(unlist(A)), list(copy = ~ .))) |>
   mutate(across(all_of(c("gly_kg_2_year_10_5y", "paraq_kg_2_year_10_5y")), ~ . - 10)) |>
   mutate(censor_10_5y = 1,
