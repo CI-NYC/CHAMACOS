@@ -24,7 +24,7 @@ isotonic_projection <- function(x, alpha = 0.05) {
 }
 
 read_results <- function(t, shift){
-  data <- readRDS((paste0("results_longitudinal/mhtn_", shift, "_t_", t, ".rds")))
+  data <- readRDS((paste0("results_single/mhtn_", shift, "_t_", t, ".rds")))
 }
 
 combined_results_list <- list()
@@ -33,54 +33,54 @@ results_shift <- list()
 density_shift <- list()
 combined_results_df <- data.frame()
 for (z in c("obs", "mult"))
-    
+  
+{
+  results_t <- list()
+  for (j in 1:5)
   {
-    results_t <- list()
-    for (j in 1:5)
-    {
-      results_t[[j]] <- read_results(as.character(j), as.character(z)) 
-      
-      if(j > 1)
-      {
-        results_t[[j]]$theta <- 1 - results_t[[j]]$theta
-        old_low <- results_t[[j]]$low
-        results_t[[j]]$low <- 1 - results_t[[j]]$high
-        results_t[[j]]$high <- 1 - old_low
-      }
-    }
+    results_t[[j]] <- read_results(as.character(j), as.character(z)) 
     
-    results_shift[[z]] <- isotonic_projection(results_t)
+    if(j > 1)
+    {
+      results_t[[j]]$theta <- 1 - results_t[[j]]$theta
+      old_low <- results_t[[j]]$low
+      results_t[[j]]$low <- 1 - results_t[[j]]$high
+      results_t[[j]]$high <- 1 - old_low
+    }
   }
   
-  tidied_results <- map(results_shift, ~ map_dfr(.x, tidy))
-  
-  dfobs <- tidied_results[[1]] |>
-    mutate(shift = "obs",
-           t = row_number())
-  
-  dfshift <- tidied_results[[2]]|>
-    mutate(shift = "mult", 
-           t = row_number())
-  
-  combined_results_df <- dfobs |>
-    merge(dfshift, all = TRUE) |>
-    distinct() |>
-    arrange(t, shift)
-  
-  contrast_shift_obs <- map2(results_shift[[2]], results_shift[[1]], ~lmtp_contrast(.x, ref = .y))
-  
-  
-  combined_vals_contrast_shift_obs<- map_dfr(contrast_shift_obs, ~ {
-    data.frame(vals = .x$vals)  
-  }) |>
-    mutate(t = row_number())
-  
-  contrasts_df <- combined_vals_contrast_shift_obs |>
-    mutate(contrast = "shift v. obs") |>
-    arrange(t, contrast)
-  
-  colnames(contrasts_df) <- gsub("^vals\\.", "", colnames(contrasts_df))
-  
+  results_shift[[z]] <- isotonic_projection(results_t)
+}
+
+tidied_results <- map(results_shift, ~ map_dfr(.x, tidy))
+
+dfobs <- tidied_results[[1]] |>
+  mutate(shift = "obs",
+         t = row_number())
+
+dfshift <- tidied_results[[2]]|>
+  mutate(shift = "mult", 
+         t = row_number())
+
+combined_results_df <- dfobs |>
+  merge(dfshift, all = TRUE) |>
+  distinct() |>
+  arrange(t, shift)
+
+contrast_shift_obs <- map2(results_shift[[2]], results_shift[[1]], ~lmtp_contrast(.x, ref = .y))
+
+
+combined_vals_contrast_shift_obs<- map_dfr(contrast_shift_obs, ~ {
+  data.frame(vals = .x$vals)  
+}) |>
+  mutate(t = row_number())
+
+contrasts_df <- combined_vals_contrast_shift_obs |>
+  mutate(contrast = "shift v. obs") |>
+  arrange(t, contrast)
+
+colnames(contrasts_df) <- gsub("^vals\\.", "", colnames(contrasts_df))
+
 combined_results_df
 contrasts_df
 
@@ -134,12 +134,10 @@ contrast_plot <- ggplot(data = contrasts_df, aes(x = factor(t), y = theta, color
 
 
 plots_combined <- ggarrange(results_plot, 
-                      contrast_plot,
-                      labels = c("A", "B"),
-                      align = "h",
-                      nrow = 2)
+                            contrast_plot,
+                            labels = c("A", "B"),
+                            align = "h",
+                            nrow = 2)
 
-ggsave(plot = plots_combined, filename = here::here("plots/longitudinal_local_plot.pdf"),
+ggsave(plot = plots_combined, filename = here::here("plots/convex_local_plot.pdf"),
        width = 12, height = 9, dpi = 300, units = "in", device = pdf)
-
-  

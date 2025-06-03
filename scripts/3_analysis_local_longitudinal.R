@@ -51,12 +51,6 @@ data_original <- readRDS(here::here(paste0("data/longitudinal_data_aligned.rds")
                 "gly_kg_2_year_time_5",
                 "paraq_kg_2_year_time_5")
               )
-
-    data_original <- data_original |>
-      mutate(across(
-        all_of(unlist(A)),
-        ~ pmin(., quantile(., 0.95, na.rm = TRUE))
-      ))
     
     data_shifted_mult_all <- data_original |>
       mutate(across(all_of(c(starts_with("gly_kg_2_year"), starts_with("paraq_kg_2_year"))), ~ . * 0.8)) |>
@@ -168,6 +162,7 @@ data_original <- readRDS(here::here(paste0("data/longitudinal_data_aligned.rds")
         "work_cat_time_5")
       ) 
     
+    
     learners <- list("mean", 
                      "glm",
                      "earth",
@@ -175,10 +170,16 @@ data_original <- readRDS(here::here(paste0("data/longitudinal_data_aligned.rds")
                      list("xgboost", 
                           min_child_weight = 5, 
                           id = "xgboost1"),
-                     "ranger",
-                     list("ranger", 
-                          num.trees = 1000, 
-                          id = "ranger1")
+                     list("xgboost", 
+                          lambda = 2, 
+                          id = "xgboost1"),
+                     list("xgboost", 
+                          lambda = 5, 
+                          id = "xgboost1"),
+                     list("xgboost", 
+                          lambda = 10, 
+                          id = "xgboost1"),
+                     "ranger"
     )
     
     run_lmtp <- function(data = data_original, shifted = NULL)
@@ -208,10 +209,10 @@ data_original <- readRDS(here::here(paste0("data/longitudinal_data_aligned.rds")
                        mtp = TRUE, 
                        learners_outcome = learners,
                        learners_trt = learners,
-                       folds = 10,
-                       control = lmtp_control(.learners_outcome_folds = 5,
-                                              .learners_trt_folds = 5,
-                                              .learners_conditional_folds = 5,
+                       folds = 20,
+                       control = lmtp_control(#.learners_outcome_folds = 5,
+                                              #.learners_trt_folds = 5,
+                                              #.learners_conditional_folds = 5,
                                               .trim = 0.95,
                                               .patience = 10,
                                               .epochs = 50L,
@@ -223,11 +224,11 @@ data_original <- readRDS(here::here(paste0("data/longitudinal_data_aligned.rds")
       res
     }
   
-for (i in 5:1)
+for (i in 3:3)
   {
     set.seed(5)
     mult_all <- run_lmtp(shifted = data_shifted_mult_all)
-    saveRDS(mult_all, here::here(paste0("results_longitudinal/", "mhtn_mult_t_", i, ".rds")))
+    saveRDS(mult_all, here::here(paste0("results_longitudinal_final/", "mhtn_mult_t_", i, "_95.rds")))
     
     # set.seed(5)
     # add_all <-run_lmtp(outcome_timepoint = time, shifted = data_shifted_add_all)
@@ -235,7 +236,7 @@ for (i in 5:1)
     
     set.seed(5)
     obs_all <- run_lmtp(shifted = NULL)
-    saveRDS(obs_all, here::here(paste0("results_longitudinal/", "mhtn_obs_t_", i, ".rds")))
+    saveRDS(obs_all, here::here(paste0("results_longitudinal_final/", "mhtn_obs_t_", i, "_95.rds")))
 }
     
     

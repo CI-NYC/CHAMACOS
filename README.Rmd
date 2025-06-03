@@ -1,27 +1,48 @@
 ---
-title: "README"
+title: "CHAMACOS Pesticide Use ReadME"
 output: github_document
-date: "2025-02-06"
 ---
 
-## CHAMACOS Pesticide Use ReadME
+Exposures (7 classes):
+- Organophophates
+- Pyrethroids
+- Carbamates
+- Neonicotinoids
+- Manganese fungicides 
+- Glyphosate herbicides
+- Paraquat herbicides
 
-- file `00_data_cleaning.R` contains basic data cleaning BEFORE applying the convex hull shifts, such as:
-  - removing individuals with cancer at baseline
-  - removing individuals with missing values in the years observed variable at time t = 0 (`years_2y_10_5y`) -- this likely means they were not present at this timepoint
-  - keeping only individuals with number of years observed greater than or equal to 1 year, 1.5 years, and 2 years (this is flexible and results may change depending on the filtering done here)
-    - 1 year (n = 317), 1.5 years (n = 310), 2 years (n = 250)
-  - keeping only individuals with use of each pesticide within 1 km (when not using local) but keeping these individuals when using local)
-  - add missing indicators for missing values in baseline variables, impute missing values with mode/median
+Outcome:
+- Maternal hypertension
+
+- File `00_data_cleaning.R` contains basic data cleaning on the original data (n = 621), such as:
+  - Completely ignoring the `14 year` visit due to differences in outcome measurement at this time point
+    - NOTE: This means any exposures, time-varying covariates, and outcomes are ignored in both the analysis and when doing LOCF (or should they be included when doing LOCF imputation?)
+  - Removing individuals with cancer at baseline (n = 2 removed). NOTE: 2 individuals are missing baseline cancer status but they are kept in the data for now
+  - Identifying the first period of observation (first period during which years_PERIOD >= 1 year), individuals with no first period of observation removed (n = 109 removed)
+    - NOTE: See image below for further details
+    - NOTE: 1 year was chosen in discussion with Lucia
+  - For any subsequent time points, if an individual has missing years_PERIOD or years_PERIOD < 1 year, their exposures will be set to `NA` for that period and the exposure values from the previous time period will be carried forward. This is done because we assume that not enough data has been observed at that time point
+    - NOTE: Alternatively, we could consider censoring individuals when the number of years observed is insufficient 
+  - Creating censoring variables where censoring occurs when outcome is missing; converting censoring into a survival-type censoring, meaning that once an individual experiences censoring, they will have experienced it for all remaining time points
+  - Converting maternal hypertension outcome to a survival-type outcome, meaning that once an individual experiences the outcome, they will have experienced it for all remaining time points
+  - Removing individuals who experienced outcome prior to time period 1 (n = 11 removed)
+  - Adding missing indicators for missing values in baseline variables, impute baseline missing values with mode/median, any subsequent missing values imputed using LOCF (except for age which uses LOCF + 2/4 years)
+  - Converting any variables occurring after outcome has occurred or censoring has occurred to `NA`
+  - Truncating all exposure variables at their respective 95th percentile values due to presence of outliers
   
-- file `01_getting_shifted_convexhull.R` contains code to apply normalization between 0 and 1 and then apply convex hull shifts (1. a multiplicative 20% decrease shift and 2. an additive shift by 10 scaled units)
-  - apply truncation to all 7 exposure variables (truncating at the 95th percentile due to heavy right skew)
-  - normalize each exposure variable between 0 and 1
-  - apply convex hull shifts (1. a multiplicative 20% decrease shift and 2. an additive shift by 10 scaled units)
-  - summary statistics about shifts
+n = 490 individuals remaining
 
-- file `02_lmtp.R` contains code to apply lmtp analysis to exposure data using baseline covariates, timevarying covariates at t = 0, exposures at t = 0, and outcome (maternal hypertension) at 10.5 years.
+![](plots/CHAMACOS_Outcome.png)
 
-- file `02_lmtp_local.R` contains code to apply lmtp analysis (using local) to exposure data using baseline covariates, timevarying covariates at t = 0, exposures at t = 0, and outcome (maternal hypertension) at 10.5 years.
+- File `1_convex_hull.R` contains code to apply the convex hull at each time period independently
+  - We apply a 20% reduction shift on Glyphosate herbicides and Paraquat herbicides and keep other exposures at their observed values
+  - When applying the shift, 57.3%, 54.0%, 40.1%, 32.7%, and 41.4% of individuals stay within the bounds of the convex hull for the 20% reductions of the two herbicides at time points 1, 2, 3, 4, and 5, respectively.
+  - For those that fall outside of the convex hull, we keep their exposures at the observed values
+  
+- File `2a_analysis_local_convex_hull_multiplicative.R` contains code to conduct a longitudinal analysis on the convex hull shifted exposures
+  - This is a local analysis in which we assess the effects among those with use of Glyphosate herbicides or Paraquat herbicides in the past 2yr within 1km at the first time point. 
+  
+- File `3_analysis_local_longitudinal.R` contains code to conduct a longitudinal analysis on 20% reduction shifts on the Glyphosate herbicides and Paraquat herbicides (while keeping the remaining exposures at their observed values)
+  - This is a local analysis in which we assess the effects among those with use of Glyphosate herbicides or Paraquat herbicides in the past 2yr within 1km at the first time point. 
 
-### Preliminary Results
