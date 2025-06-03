@@ -6,7 +6,8 @@ library(zoo)
 data <- read_csv("data/rudolph_01b.csv") |>
   # removing any variables from the 14 year visit
   select(-matches("_14_y")) |>
-    filter(cancer_bl == 0 | is.na(cancer_bl)) |> # only keep no cancer or missing (n = 2 removed)
+    filter((cancer_bl == 0 | is.na(cancer_bl)), # only keep no cancer or missing (n = 11 removed)
+           hbp_bl == 0 | is.na(hbp_bl)) |> # only keep no baseline high blood pressure or missing (n = 76 removed)
     mutate(first_obs = case_when(years_2y_10_5y >= 1 ~ "10_5y", # getting period of "first" observation (where years >= 1), this is time t = 0/1
                                  years_2y_12y >= 1 ~ "12y",
                                  #years_2y_14y >= 1 ~ "14y",
@@ -15,7 +16,7 @@ data <- read_csv("data/rudolph_01b.csv") |>
                                  years_2y_mc1 >= 1 ~ "mc1",
                                  TRUE ~ as.character(NA)
                                  )) |>
-  filter(is.na(first_obs) == FALSE) |> # removing those that are never observed for >= 1 year (n = 109 removed)
+  filter(is.na(first_obs) == FALSE) |> # removing those that are never observed for >= 1 year (n = 99 removed)
   # censoring when outcome is missing
   mutate(censored_period = case_when(first_obs == "10_5y" & (is.na(mhtn_10_5y)) ~ 1,
                                      first_obs == "10_5y" & (is.na(mhtn_12y)) ~ 2,
@@ -75,11 +76,16 @@ data <- read_csv("data/rudolph_01b.csv") |>
 
 # fixing outcome for survival (carrying forward hypertension)
 data <- data |>
-  mutate(mhtn_12y = ifelse(mhtn_10_5y == 1, 1, mhtn_12y),
-         #mhtn_14y = ifelse(mhtn_12y == 1, 1, mhtn_14y),
-         mhtn_16y = ifelse(mhtn_12y == 1, 1, mhtn_16y), #do not carry forward 14 year
-         mhtn_18y = ifelse(mhtn_16y == 1, 1, mhtn_18y),
-         mhtn_mc1 = ifelse(mhtn_18y == 1, 1, mhtn_mc1)
+  mutate(mhtn_12y = case_when(mhtn_10_5y == 1 ~ 1, 
+                              TRUE ~ mhtn_12y),
+         #mhtn_14y = case_when(mhtn_12y == 1 ~ 1, 
+        #                     TRUE ~ mhtn_14y),
+         mhtn_16y = case_when(mhtn_12y == 1 ~ 1, 
+                              TRUE ~ mhtn_16y), #do not carry forward 14 year
+         mhtn_18y = case_when(mhtn_16y == 1 ~ 1, 
+                              TRUE ~ mhtn_18y),
+         mhtn_mc1 = case_when(mhtn_18y == 1 ~ 1, 
+                              TRUE ~ mhtn_mc1)
          )
 
 # setting missing exposures to missing when years_PERIOD or years_PERIOD < 1 
@@ -146,7 +152,7 @@ data <- data |>
          across(all_of(vars_mc1), ~ if_else(is.na(years_2y_mc1) | years_2y_mc1 < 1, NA, .)),
          )
 
-# identifying individuals who experienced outcome before first observation (n = 11 removed)
+# identifying individuals who experienced outcome before first observation (n = 10 removed)
 data <- data |>
   mutate(outcome_before_first_flag = case_when(mhtn_10_5y == 1 & first_obs == "12y" ~ 1,
                                                #mhtn_10_5y == 1 & first_obs == "14y" ~ 1,
@@ -396,16 +402,25 @@ summary(covars_outcome)
 
 # cleaning up censoring (carry-forward censoring)
 covars_outcome <- covars_outcome |>
-  mutate(mhtn_time_2 = ifelse(mhtn_time_1 == 1, 1, mhtn_time_2),
-         mhtn_time_3 = ifelse(mhtn_time_2 == 1, 1, mhtn_time_3),
-         mhtn_time_4 = ifelse(mhtn_time_3 == 1, 1, mhtn_time_4), 
-         mhtn_time_5 = ifelse(mhtn_time_4 == 1, 1, mhtn_time_5)
+  mutate(mhtn_time_2 = case_when(mhtn_time_1 == 1 ~ 1, 
+                                 TRUE ~ mhtn_time_2),
+         mhtn_time_3 = case_when(mhtn_time_2 == 1 ~ 1, 
+                                 TRUE ~ mhtn_time_3),
+         mhtn_time_4 = case_when(mhtn_time_3 == 1 ~ 1,
+                                 TRUE ~ mhtn_time_4), 
+         mhtn_time_5 = case_when(mhtn_time_4 == 1 ~1, 
+                                 TRUE ~ mhtn_time_5)
   ) |>
-  mutate(censor_time_1 = ifelse(is.na(mhtn_time_1) | censored_period == 1, 0, 1),
-       censor_time_2 = ifelse(is.na(mhtn_time_2) | censored_period == 2, 0, 1),
-       censor_time_3 = ifelse(is.na(mhtn_time_3) | censored_period == 3, 0, 1),
-       censor_time_4 = ifelse(is.na(mhtn_time_4) | censored_period == 4, 0, 1),
-       censor_time_5 = ifelse(is.na(mhtn_time_5) | censored_period == 5, 0, 1)) |>
+  mutate(censor_time_1 = case_when(is.na(mhtn_time_1) | censored_period == 1 ~ 0, 
+                                   TRUE ~ 1),
+       censor_time_2 = case_when(is.na(mhtn_time_2) | censored_period == 2 ~ 0, 
+                                 TRUE ~ 1),
+       censor_time_3 = case_when(is.na(mhtn_time_3) | censored_period == 3 ~ 0, 
+                                 TRUE ~ 1),
+       censor_time_4 = case_when(is.na(mhtn_time_4) | censored_period == 4 ~ 0,
+                                 TRUE ~ 1),
+       censor_time_5 = case_when(is.na(mhtn_time_5) | censored_period == 5 ~ 0,
+                                 TRUE ~ 1)) |>
   mutate(censor_time_2 = case_when(censor_time_1 == 0 ~ as.numeric(NA), 
                                    mhtn_time_1 == 1 ~ as.numeric(NA),
                                    TRUE ~ censor_time_2),
@@ -495,7 +510,7 @@ covars_outcome <- covars_outcome |>
   bind_cols(locf_func(covars_outcome, "ipovcat_3_time_")) |>
   bind_cols(locf_func(covars_outcome, "hhagwork_time_")) |>
   bind_cols(locf_func(covars_outcome, "work_cat_time_")) |>
-  bind_cols(locf_func_age(covars_outcome, "age_time_"), years = 2)
+  bind_cols(locf_func(covars_outcome, "age_time_"), years = 2)
 
 
 # once censored or experienced outcome, make any future variables NA
@@ -531,15 +546,23 @@ censored_future_vars_NA <- function(df) {
 }
 
 covars_outcome <- censored_future_vars_NA(covars_outcome) |>
-  mutate(mhtn_time_2 = ifelse(mhtn_time_1 == 1, 1, mhtn_time_2),
-         mhtn_time_3 = ifelse(mhtn_time_2 == 1, 1, mhtn_time_3),
-         mhtn_time_4 = ifelse(mhtn_time_3 == 1, 1, mhtn_time_4), 
-         mhtn_time_5 = ifelse(mhtn_time_4 == 1, 1, mhtn_time_5)
+  mutate(mhtn_time_2 = case_when(mhtn_time_1 == 1 ~ 1, 
+                                 TRUE ~ mhtn_time_2),
+         mhtn_time_3 = case_when(mhtn_time_2 == 1 ~ 1, 
+                                 TRUE ~ mhtn_time_3),
+         mhtn_time_4 = case_when(mhtn_time_3 == 1 ~ 1, 
+                                 TRUE ~ mhtn_time_4), 
+         mhtn_time_5 = case_when(mhtn_time_4 == 1 ~ 1, 
+                                 TRUE ~ mhtn_time_5)
   ) |>
-  mutate(censor_time_2 = ifelse(censor_time_1 == 0, 0, censor_time_2),
-         censor_time_3 = ifelse(censor_time_2 == 0, 0, censor_time_3),
-         censor_time_4 = ifelse(censor_time_3 == 0, 0, censor_time_4), 
-         censor_time_5 = ifelse(censor_time_4 == 0, 0, censor_time_5)
+  mutate(censor_time_2 = case_when(censor_time_1 == 0 ~ 0, 
+                                   TRUE ~ censor_time_2),
+         censor_time_3 = case_when(censor_time_2 == 0 ~ 0, 
+                                   TRUE ~ censor_time_3),
+         censor_time_4 = case_when(censor_time_3 == 0 ~ 0, 
+                                   TRUE ~ censor_time_4), 
+         censor_time_5 = case_when(censor_time_4 == 0 ~ 0, 
+                                   TRUE ~ censor_time_5)
   )
 
 A <- list(c("op_kg_2_year_time_1",
@@ -589,4 +612,11 @@ covars_outcome <- covars_outcome |>
 
 saveRDS(covars_outcome, paste0("data/longitudinal_data_aligned.rds"))
 
+## MISSING outcomes
+covars_outcome |> group_by(is.na(mhtn_time_1)) |> summarize(count = n())
+covars_outcome |> group_by(is.na(mhtn_time_2), is.na(mhtn_time_1) == FALSE, first_obs != "mc1") |> summarize(count = n())
+covars_outcome |> group_by(is.na(mhtn_time_3), is.na(mhtn_time_2) == FALSE, first_obs != "18y") |> summarize(count = n())
+covars_outcome |> group_by(is.na(mhtn_time_4), is.na(mhtn_time_3) == FALSE, first_obs != "16y") |> summarize(count = n())
+covars_outcome |> group_by(is.na(mhtn_time_5), is.na(mhtn_time_4) == FALSE, first_obs != "12y") |> summarize(count = n())
 
+covars_outcome |> group_by(first_obs) |> summarize(count = n())

@@ -15,7 +15,7 @@ set.seed(5)
   # looping through time points -- applying convex hull at each point independently 
   for (t in 1:5)
   {
-  # reading data, 490 observations non-missing at initial time
+  # reading data, 422 observations non-missing at initial time
   pol_unnormalized <- covars_outcome |>
     select(newid,
            paste0("op_kg_2_year_time_", t),
@@ -83,7 +83,7 @@ set.seed(5)
   
   # proportion of the feasible shift equal to the desired shift
   desired_shift <- shifted_mult_feasible == shifted_mult
-  prop <- mean(desired_shift) # 57.3% of individuals for 20% reduction
+  prop <- mean(desired_shift) # 54.0% of individuals for 20% reduction at time point 1
   prop
   
   prop_in_convex_hull[[t]] <- prop
@@ -238,3 +238,7 @@ set.seed(5)
   saveRDS(shifted_mult_final, paste0("data/shifted_data_convex_mult.rds"))
   saveRDS(observed_final, paste0("data/observed_data.rds"))
   saveRDS(prop_in_convex_hull, paste0("data/percent_in_convex_hull.rds"))
+  
+  
+  
+  
