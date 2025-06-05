@@ -15,7 +15,7 @@ set.seed(5)
   # looping through time points -- applying convex hull at each point independently 
   for (t in 1:5)
   {
-  # reading data, 422 observations non-missing at initial time
+  # reading data, 359 observations non-missing at initial time
   pol_unnormalized <- covars_outcome |>
     select(newid,
            paste0("op_kg_2_year_time_", t),
@@ -81,9 +81,12 @@ set.seed(5)
   # median percent change within each exposure getting shifted_mult
   unlist(lapply(perc_change, median)) * 100
   
-  # proportion of the feasible shift equal to the desired shift
-  desired_shift <- shifted_mult_feasible == shifted_mult
-  prop <- mean(desired_shift) # 54.0% of individuals for 20% reduction at time point 1
+  # rounding shifted to match original
+  shifted_mult_feasible <- round(shifted_mult_feasible, 2)
+  
+  # proportion of the feasible shift equal to the desired shift (changes with rounding)
+  desired_shift <- shifted_mult_feasible == round(shifted_mult, 2)
+  prop <- mean(desired_shift) # 85.4% for rounding to 2 digits, 64.6% of individuals for rounding to 3 digits for 20% reduction at time point 1 -- choosing 3 digits for now
   prop
   
   prop_in_convex_hull[[t]] <- prop
@@ -96,9 +99,6 @@ set.seed(5)
   
   # returning shifts to original scale
   #shifted_mult_feasible_unnormalized <- (shifted_mult_feasible * (sapply(pol_unnormalized,function(col) max(col)) - sapply(pol_unnormalized,function(col) min(col)))) + sapply(pol_unnormalized,function(col) min(col))
-  
-  # rounding shifted to match original
-  shifted_mult_feasible <- round(shifted_mult_feasible, 3)
   
   # only returning shifted for those in the convex hull; for those that fall outside, use observed treatment values
   shifted_final <- shifted_mult_feasible
