@@ -27,27 +27,27 @@ Outcome:
     - NOTE: Alternatively, we could consider censoring individuals when the number of years observed is insufficient 
   - Creating censoring variables where censoring occurs when outcome is missing; converting censoring into a survival-type censoring, meaning that once an individual experiences censoring, they will have experienced it for all remaining time points
   - Converting maternal hypertension outcome to a survival-type outcome, meaning that once an individual experiences the outcome, they will have experienced it for all remaining time points
-  - Removing individuals who experienced outcome or were reported to have high blood pressure prior to time period 1 (n = 142 removed)
+  - Removing individuals who experienced outcome or were reported to have high blood pressure prior to time period 1 (n = 94 removed)
   - Adding missing indicators for missing values in baseline variables, impute baseline missing values with mode/median, any subsequent missing values imputed using LOCF (except for age which we impute using an approximation; for example, if an individual is missing `age_10_5y` but not `age_9y`, we can impute the approximation `age_9y` + 1.5 years)
   - Converting any variables occurring after outcome has occurred or censoring has occurred to `NA`
   - Truncating all exposure variables at their respective 95th percentile values due to presence of outliers
 
 How many people are censored because they are actually missing the outcome or because "joined late"?
-  - Looks like more people are censored because they are missing the oucome so we will use LOCF for missing exposures and time-varying covariates for those that "joined late"
+  - Looks like more people are censored because they are missing the outcome so we will use LOCF for missing exposures and time-varying covariates for those that "joined late"
 
 |          | Missing outcome | Joined Late|
 |----------|----------|----------|
-| Time 1    | 13         | --    |
+| Time 1    | 15         | --    |
 | Time 2    | 28     | 0    |
-| Time 3    | 32     | 7    |
-| Time 4    | 9     | 10    |
-| Time 5    | 0     | 8    |
+| Time 3    | 37     | 7    |
+| Time 4    | 10     | 10    |
+| Time 5    | 0     | 9    |
   
-n = 359 individuals remaining
+n = 407 individuals remaining
 
 ![](plots/CHAMACOS_Outcome.png)
 
-- File `1_convex_hull.R` contains code to normalize the treatment variables and apply the convex hull at each time period independently
+- File `1_convex_hull.R` contains code to scale the treatment variables and apply the convex hull at each time period independently
   - We apply a 20% reduction shift on Glyphosate herbicides and Paraquat herbicides and keep other exposures at their observed values
   - When applying the shift, 64.6%, 63.5%, 52.6%, 49.3%, and 55.7% of individuals stay within the bounds of the convex hull for the 20% reductions of the two herbicides at time points 1, 2, 3, 4, and 5, respectively.
     - NOTE: the percent of individuals staying within the bounds of the convex hull changes depending on the rounding done (more rounding means more people stay in the bounds of the convex hull) -- we could consider rounding to 2 digits (85.4%, 83.7%, 80.1%, 73.7%, 78.1%.

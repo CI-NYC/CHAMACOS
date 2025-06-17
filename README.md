@@ -37,7 +37,7 @@ Outcome: - Maternal hypertension
     meaning that once an individual experiences the outcome, they will
     have experienced it for all remaining time points
   - Removing individuals who experienced outcome or were reported to
-    have high blood pressure prior to time period 1 (n = 142 removed)
+    have high blood pressure prior to time period 1 (n = 94 removed)
   - Adding missing indicators for missing values in baseline variables,
     impute baseline missing values with mode/median, any subsequent
     missing values imputed using LOCF (except for age which we impute
@@ -51,23 +51,23 @@ Outcome: - Maternal hypertension
 
 How many people are censored because they are actually missing the
 outcome or because “joined late”? - Looks like more people are censored
-because they are missing the oucome so we will use LOCF for missing
+because they are missing the outcome so we will use LOCF for missing
 exposures and time-varying covariates for those that “joined late”
 
 |        | Missing outcome | Joined Late |
 |--------|-----------------|-------------|
-| Time 1 | 13              | –           |
+| Time 1 | 15              | –           |
 | Time 2 | 28              | 0           |
-| Time 3 | 32              | 7           |
-| Time 4 | 9               | 10          |
-| Time 5 | 0               | 8           |
+| Time 3 | 37              | 7           |
+| Time 4 | 10              | 10          |
+| Time 5 | 0               | 9           |
 
-n = 359 individuals remaining
+n = 407 individuals remaining
 
 ![](plots/CHAMACOS_Outcome.png)
 
-- File `1_convex_hull.R` contains code to normalize the treatment
-  variables and apply the convex hull at each time period independently
+- File `1_convex_hull.R` contains code to scale the treatment variables
+  and apply the convex hull at each time period independently
   - We apply a 20% reduction shift on Glyphosate herbicides and Paraquat
     herbicides and keep other exposures at their observed values
   - When applying the shift, 64.6%, 63.5%, 52.6%, 49.3%, and 55.7% of

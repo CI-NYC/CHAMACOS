@@ -6,7 +6,8 @@ library(zoo)
 # newest data as of 06-04-25
 data <- read_csv("data/rudolph_01c.csv") |>
   # removing any variables from the 14 year visit
-  select(-matches("_14_y")) |>
+  select(-matches("_14_y"),
+         -matches("_14y")) |>
     filter((cancer_bl == 0 | is.na(cancer_bl))) |> # only keep no cancer or missing (n = 11 removed)
     mutate(first_obs = case_when(years_2y_10_5y >= 1 ~ "10_5y", # getting period of "first" observation (where years >= 1), this is time t = 0/1
                                  years_2y_12y >= 1 ~ "12y",
@@ -16,8 +17,24 @@ data <- read_csv("data/rudolph_01c.csv") |>
                                  years_2y_mc1 >= 1 ~ "mc1",
                                  TRUE ~ as.character(NA)
                                  )) |>
-  filter(is.na(first_obs) == FALSE) |> # removing those that are never observed for >= 1 year (n = 109 removed)
-  # censoring when outcome is missing
+  filter(is.na(first_obs) == FALSE) # removing those that are never observed for >= 1 year (n = 109 removed)
+
+# fixing outcome and censoring to survival
+
+# fixing outcome for survival (carrying forward hypertension)
+data <- data %>%
+  mutate(experienced_outcome_flag = as.integer(rowSums(select(., starts_with("mhtn_")) == 1, na.rm = TRUE) > 0)) |>
+  mutate(mhtn_12y = case_when(mhtn_10_5y == 1 ~ 1, 
+                              TRUE ~ mhtn_12y),
+         #mhtn_14y = case_when(mhtn_12y == 1 ~ 1, 
+         #                     TRUE ~ mhtn_14y),
+         mhtn_16y = case_when(mhtn_12y == 1 ~ 1, 
+                              TRUE ~ mhtn_16y), #do not carry forward 14 year
+         mhtn_18y = case_when(mhtn_16y == 1 ~ 1, 
+                              TRUE ~ mhtn_18y),
+         mhtn_mc1 = case_when(mhtn_18y == 1 ~ 1, 
+                              TRUE ~ mhtn_mc1)) |>
+  # censoring when outcome is missing or joined cohort "late"
   mutate(censored_period = case_when(first_obs == "10_5y" & (is.na(mhtn_10_5y)) ~ 1,
                                      first_obs == "10_5y" & (is.na(mhtn_12y)) ~ 2,
                                      #first_obs == "10_5y" & (is.na(mhtn_14y)) ~ 2,
@@ -29,7 +46,7 @@ data <- read_csv("data/rudolph_01c.csv") |>
                                      first_obs == "12y" & (is.na(mhtn_16y)) ~ 2,
                                      first_obs == "12y" & (is.na(mhtn_18y)) ~ 3,
                                      first_obs == "12y" & (is.na(mhtn_mc1)) ~ 4,
-                                     first_obs == "12y" ~ 5,
+                                     first_obs == "12y" & experienced_outcome_flag == 0 ~ 5,
                                      # first_obs == "14y" & (is.na(mhtn_14y)) ~ 1,
                                      # first_obs == "14y" & (is.na(mhtn_16y)) ~ 2,
                                      # first_obs == "14y" & (is.na(mhtn_18y)) ~ 3,
@@ -37,12 +54,12 @@ data <- read_csv("data/rudolph_01c.csv") |>
                                      first_obs == "16y" & (is.na(mhtn_16y)) ~ 1,
                                      first_obs == "16y" & (is.na(mhtn_18y)) ~ 2,
                                      first_obs == "16y" & (is.na(mhtn_mc1)) ~ 3,
-                                     first_obs == "16y" ~ 4,
+                                     first_obs == "16y" & experienced_outcome_flag == 0 ~ 4,
                                      first_obs == "18y" & (is.na(mhtn_18y)) ~ 1,
                                      first_obs == "18y" & (is.na(mhtn_mc1)) ~ 2,
-                                     first_obs == "18y" ~ 3,
+                                     first_obs == "18y" & experienced_outcome_flag == 0 ~ 3,
                                      first_obs == "mc1" & (is.na(mhtn_mc1)) ~ 1,
-                                     first_obs == "mc1" ~ 2,
+                                     first_obs == "mc1" & experienced_outcome_flag == 0 ~ 2,
                                      TRUE ~ 0 # never censored
   ))
   # censoring when one of the following occurs: outcome is missing, number of years observed falls below 1 or is missing
@@ -73,62 +90,6 @@ data <- read_csv("data/rudolph_01c.csv") |>
   #                                    first_obs == "mc1" ~ 1,
   #                                    TRUE ~ as.numeric(NA) # never censored
   #                                    ))
-
-# fixing age variable due to missingness (using approximations)
-
-data <- data |>
-  mutate(age_9y = case_when(is.na(age_9y) & is.na(age_10_5y) == FALSE ~ age_10_5y - 1.5, # approximation
-                            is.na(age_9y) & is.na(age_12y) == FALSE ~ age_12y - 3, # approximation
-                            is.na(age_9y) & is.na(age_16y) == FALSE ~ age_16y - 7, # approximation
-                            is.na(age_9y) & is.na(age_18y) == FALSE ~ age_18y - 9, # approximation
-                            is.na(age_9y) & is.na(bodyage_mc1) == FALSE ~ bodyage_mc1 - 11, # approximation
-                            TRUE ~ age_9y),
-         age_10_5y = case_when(is.na(age_10_5y) & is.na(age_9y) == FALSE ~ age_9y + 1.5, # approximation
-                            is.na(age_10_5y) & is.na(age_12y) == FALSE ~ age_12y - 1.5, # approximation
-                            is.na(age_10_5y) & is.na(age_16y) == FALSE ~ age_16y - 5.5, # approximation
-                            is.na(age_10_5y) & is.na(age_18y) == FALSE ~ age_18y - 7.5, # approximation
-                            is.na(age_10_5y) & is.na(bodyage_mc1) == FALSE ~ bodyage_mc1 - 9.5, # approximation
-                            TRUE ~ age_10_5y),
-         age_12y = case_when(is.na(age_12y) & is.na(age_10_5y) == FALSE ~ age_10_5y + 1.5, # approximation,
-                             is.na(age_12y) & is.na(age_9y) == FALSE ~ age_9y + 3, # approximation
-                               is.na(age_12y) & is.na(age_16y) == FALSE ~ age_16y - 4, # approximation
-                               is.na(age_12y) & is.na(age_18y) == FALSE ~ age_18y - 6, # approximation
-                               is.na(age_12y) & is.na(bodyage_mc1) == FALSE ~ bodyage_mc1 - 8, # approximation
-                               TRUE ~ age_12y),
-         age_16y = case_when(is.na(age_16y) & is.na(age_18y) == FALSE ~ age_18y - 2, # approximation
-                             is.na(age_16y) & is.na(bodyage_mc1) == FALSE ~ bodyage_mc1 - 4, # approximation
-                             is.na(age_16y) & is.na(age_12y) == FALSE ~ age_12y + 4, # approximation
-                             is.na(age_16y) & is.na(age_10_5y) == FALSE ~ age_10_5y + 5.5, # approximation,
-                             is.na(age_16y) & is.na(age_9y) == FALSE ~ age_9y + 7, # approximation
-                             TRUE ~ age_16y),
-         age_18y = case_when(is.na(age_18y) & is.na(age_16y) == FALSE ~ age_16y + 2, # approximation
-                             is.na(age_18y) & is.na(bodyage_mc1) == FALSE ~ bodyage_mc1 - 2, # approximation
-                             is.na(age_18y) & is.na(age_12y) == FALSE ~ age_12y + 6, # approximation
-                             is.na(age_18y) & is.na(age_10_5y) == FALSE ~ age_10_5y + 7.5, # approximation,
-                             is.na(age_18y) & is.na(age_9y) == FALSE ~ age_9y + 9, # approximation
-                             TRUE ~ age_18y),
-         age_mc1 = case_when(is.na(bodyage_mc1) & is.na(age_18y) == FALSE ~ age_18y - 2, # approximation
-                             is.na(bodyage_mc1) & is.na(age_16y) == FALSE ~ age_18y + 4, # approximation
-                             is.na(bodyage_mc1) & is.na(age_12y) == FALSE ~ age_12y + 8, # approximation
-                             is.na(bodyage_mc1) & is.na(age_10_5y) == FALSE ~ age_10_5y + 9.5, # approximation,
-                             is.na(bodyage_mc1) & is.na(age_9y) == FALSE ~ age_9y + 11, # approximation
-                             TRUE ~ bodyage_mc1))
-         
-# fixing outcome for survival (carrying forward hypertension)
-data <- data |>
-  mutate(mhtn_10_5y = case_when(is.na(mhbpage_12y) == FALSE & mhbpage_12y <= age_10_5y & mhbpage_12y > age_9y ~ 1, #back-calculating the doctor-diagnosed hypertension status
-                                TRUE ~ mhtn_10_5y),
-         mhtn_12y = case_when(mhtn_10_5y == 1 ~ 1, 
-                              TRUE ~ mhtn_12y),
-         #mhtn_14y = case_when(mhtn_12y == 1 ~ 1, 
-        #                     TRUE ~ mhtn_14y),
-         mhtn_16y = case_when(mhtn_12y == 1 ~ 1, 
-                              TRUE ~ mhtn_16y), #do not carry forward 14 year
-         mhtn_18y = case_when(mhtn_16y == 1 ~ 1, 
-                              TRUE ~ mhtn_18y),
-         mhtn_mc1 = case_when(mhtn_18y == 1 ~ 1, 
-                              TRUE ~ mhtn_mc1)
-         )
 
 # setting missing exposures to missing when years_PERIOD or years_PERIOD < 1 
 vars_10_5y <- c("op_kg_2_year_10_5y",
@@ -196,7 +157,7 @@ data <- data |>
 
 # 501 remaining
 
-# identifying individuals who experienced outcome before first observation (n = 142 removed)
+# identifying individuals who experienced outcome before first observation (n = 94 removed)
 data <- data |>
   mutate(outcome_before_first_flag = case_when(mhtn_10_5y == 1 & first_obs == "12y" ~ 1,
                                                #mhtn_10_5y == 1 & first_obs == "14y" ~ 1,
@@ -213,12 +174,7 @@ data <- data |>
                                                mhtn_16y == 1 & first_obs == "18y" ~ 1,
                                                mhtn_16y == 1 & first_obs == "mc1" ~ 1,
                                                mhtn_18y == 1 & first_obs == "mc1" ~ 1,
-                                               hbp_bl == 1 ~ 1, # some missing
                                                mhtn_9y == 1 ~ 1, # some missing
-                                               mhbpage_12y <= age_9y ~ 1,
-                                               mhbpage_16y <= age_9y ~ 1,
-                                               #mhbpage_18y <= age_9y ~ 1, #is this variable supposed to be missing?
-                                               mhbpage_mc1 <= age_9y ~ 1,
                                                TRUE ~ 0)) |>
   filter(outcome_before_first_flag == 0)
 
@@ -288,12 +244,49 @@ data <- data |>
   
   summary(covars_outcome)
   
-# for time-varying use LOCF unless baseline, then use modes/median
+  
+# for time-varying use LOCF unless baseline or age, then use modes/median or approximation
   covars_outcome <- covars_outcome |>
     mutate(cham = cham - 1, # making into 0-1
            #ageusa_bl = ifelse(ageusa_bl == -9, 0, ageusa_bl), # if born in USA 0
            #ageusa_bl_missing = ifelse(is.na(ageusa_bl), 1, 0),
            #ageusa_bl = ifelse(is.na(ageusa_bl), median_narm(ageusa_bl), ageusa_bl),
+           age_9y = case_when(is.na(age_9y) & is.na(age_10_5y) == FALSE ~ age_10_5y - 1.5, # approximation
+                               is.na(age_9y) & is.na(age_12y) == FALSE ~ age_12y - 3, # approximation
+                               is.na(age_9y) & is.na(age_16y) == FALSE ~ age_16y - 7, # approximation
+                               is.na(age_9y) & is.na(age_18y) == FALSE ~ age_18y - 9, # approximation
+                               is.na(age_9y) & is.na(bodyage_mc1) == FALSE ~ bodyage_mc1 - 11, # approximation
+                               TRUE ~ age_9y),
+            age_10_5y = case_when(is.na(age_10_5y) & is.na(age_9y) == FALSE ~ age_9y + 1.5, # approximation
+                                  is.na(age_10_5y) & is.na(age_12y) == FALSE ~ age_12y - 1.5, # approximation
+                                  is.na(age_10_5y) & is.na(age_16y) == FALSE ~ age_16y - 5.5, # approximation
+                                  is.na(age_10_5y) & is.na(age_18y) == FALSE ~ age_18y - 7.5, # approximation
+                                  is.na(age_10_5y) & is.na(bodyage_mc1) == FALSE ~ bodyage_mc1 - 9.5, # approximation
+                                  TRUE ~ age_10_5y),
+            age_12y = case_when(is.na(age_12y) & is.na(age_10_5y) == FALSE ~ age_10_5y + 1.5, # approximation,
+                                is.na(age_12y) & is.na(age_9y) == FALSE ~ age_9y + 3, # approximation
+                                is.na(age_12y) & is.na(age_16y) == FALSE ~ age_16y - 4, # approximation
+                                is.na(age_12y) & is.na(age_18y) == FALSE ~ age_18y - 6, # approximation
+                                is.na(age_12y) & is.na(bodyage_mc1) == FALSE ~ bodyage_mc1 - 8, # approximation
+                                TRUE ~ age_12y),
+            age_16y = case_when(is.na(age_16y) & is.na(age_18y) == FALSE ~ age_18y - 2, # approximation
+                                is.na(age_16y) & is.na(bodyage_mc1) == FALSE ~ bodyage_mc1 - 4, # approximation
+                                is.na(age_16y) & is.na(age_12y) == FALSE ~ age_12y + 4, # approximation
+                                is.na(age_16y) & is.na(age_10_5y) == FALSE ~ age_10_5y + 5.5, # approximation,
+                                is.na(age_16y) & is.na(age_9y) == FALSE ~ age_9y + 7, # approximation
+                                TRUE ~ age_16y),
+            age_18y = case_when(is.na(age_18y) & is.na(age_16y) == FALSE ~ age_16y + 2, # approximation
+                                is.na(age_18y) & is.na(bodyage_mc1) == FALSE ~ bodyage_mc1 - 2, # approximation
+                                is.na(age_18y) & is.na(age_12y) == FALSE ~ age_12y + 6, # approximation
+                                is.na(age_18y) & is.na(age_10_5y) == FALSE ~ age_10_5y + 7.5, # approximation,
+                                is.na(age_18y) & is.na(age_9y) == FALSE ~ age_9y + 9, # approximation
+                                TRUE ~ age_18y),
+            age_mc1 = case_when(is.na(bodyage_mc1) & is.na(age_18y) == FALSE ~ age_18y - 2, # approximation
+                                is.na(bodyage_mc1) & is.na(age_16y) == FALSE ~ age_18y + 4, # approximation
+                                is.na(bodyage_mc1) & is.na(age_12y) == FALSE ~ age_12y + 8, # approximation
+                                is.na(bodyage_mc1) & is.na(age_10_5y) == FALSE ~ age_10_5y + 9.5, # approximation,
+                                is.na(bodyage_mc1) & is.na(age_9y) == FALSE ~ age_9y + 11, # approximation
+                                TRUE ~ bodyage_mc1),
            hbp_bl_missing = ifelse(is.na(hbp_bl) | hbp_bl == 9, 1, 0),
            hbp_bl = ifelse(is.na(hbp_bl) | hbp_bl == 9, Mode(hbp_bl), hbp_bl),
            #hbpage_bl_missing = ifelse(is.na(hbpage_bl), 1, 0),
@@ -403,17 +396,17 @@ saveRDS(covars_outcome, paste0("data/longitudinal_data_pre_aligned.rds"))
 # aligning cohort based on "first" observed
 # first observed time is treated as time 1
 
-containing <- c("10_5y", "12y", "16y", "18y", "mc1")
+times <- c("10_5y", "12y", "16y", "18y", "mc1")
 
-process_row <- function(row, containing, colnames) {
+process_row <- function(row, times, colnames) {
   first_val <- row[["first_obs"]]
-  first_idx <- which(containing == first_val)
+  first_idx <- which(times == first_val)
   if (length(first_idx) == 0) return(as.data.frame(row)) 
   
   new_row <- as.list(row)
   
-  for (i in seq_along(containing[first_idx:length(containing)])) {
-    suf <- containing[first_idx + i - 1]
+  for (i in seq_along(times[first_idx:length(times)])) {
+    suf <- times[first_idx + i - 1]
     
     matched_cols <- colnames[str_detect(colnames, fixed(suf))]
     
@@ -432,13 +425,13 @@ process_row <- function(row, containing, colnames) {
   as.data.frame(new_row)
 }
 
-transform_df <- function(df, containing) {
+transform_df <- function(df, times) {
   colnames <- names(df)
   df |>
-    pmap_dfr(~process_row(list(...), containing, colnames))
+    pmap_dfr(~process_row(list(...), times, colnames))
 }
 
-covars_outcome <- transform_df(covars_outcome, containing)
+covars_outcome <- transform_df(covars_outcome, times)
 
 summary(covars_outcome)
 
@@ -643,6 +636,9 @@ A <- list(c("op_kg_2_year_time_1",
             "gly_kg_2_year_time_5",
             "paraq_kg_2_year_time_5")
 )
+
+saveRDS(covars_outcome, paste0("data/longitudinal_data_aligned_pre_truncate.rds"))
+
 
 # truncate exposures at 95th percentile
 

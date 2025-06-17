@@ -224,7 +224,7 @@ data_original <- readRDS(here::here(paste0("data/longitudinal_data_aligned.rds")
       res
     }
   
-for (i in 3:3)
+for (i in 3:1)
   {
     set.seed(5)
     mult_all <- run_lmtp(shifted = data_shifted_mult_all)

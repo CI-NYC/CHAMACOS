@@ -28,7 +28,7 @@ set.seed(5)
            ) |>
     na.omit()
   
-  # Normalizing between 0 and 1
+  # scaling between 0 and 1
   norm01 <- function(x) {
     (x - min(x)) / (max(x) - min(x))
   }
@@ -36,12 +36,18 @@ set.seed(5)
   pol <- pol_unnormalized |>
     select(-newid)
   
-  # normalizing exposures between 0 and 1
+  # scaling exposures between 0 and 1
   pol <- mutate(pol, across(everything(), norm01))
   pol <- mutate(pol, across(everything(), \(x) round(x, 3)))
   
   nrow(pol)
-  summary(pol) # should be between 0 and 1
+  
+  psych::describe(pol) # should be between 0 and 1
+  
+  par(mfrow = c(3, 3))  
+  for (name in names(pol)) {
+    hist(pol[[name]], main = name, xlab = "", col = "gray")
+  }
   
   # Change to correct path for user
   options(JULIA_HOME = "/Users/si2426/.juliaup/bin")
