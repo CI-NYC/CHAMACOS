@@ -1,19 +1,18 @@
-#remotes::install_github("nt-williams/lmtp@local-riesznet")
+#remotes::install_github("nt-williams/lmtp@mlr3superlearner") -- use personal version
+
 library(lmtp)
 library(mlr3extralearners)
 library(earth)
 library(ranger)
 library(xgboost)
 library(tidyverse)
+library(data.table)
 
 norm01 <- function(x) {
   (x - min(x)) / (max(x) - min(x))
 }
 
-data_original <- readRDS(here::here(paste0("data/observed_data.rds"))) |>
-  as.data.frame() |>
-  mutate(conditional_time_1 = case_when(d_gly_kg_2_year_time_1 == 1 | d_paraq_kg_2_year_time_1 == 1 ~ 1, 
-                                        TRUE ~ 0)) 
+data_original <- readRDS(here::here(paste0("data/observed_data.rds"))) 
 
 A <- list(c("op_kg_2_year_time_1",
             "pyr_kg_2_year_time_1",
@@ -59,7 +58,6 @@ A <- list(c("op_kg_2_year_time_1",
 #   ))
 
 data_shifted_mult_all <- readRDS(here::here("data/shifted_data_convex_mult.rds")) |>
-  inner_join(data_original |> select(newid, conditional_time_1), by = c("newid" = "newid")) |>
   mutate(censor_time_1 = 1,
          censor_time_2 = 1,
          censor_time_3 = 1,
@@ -187,60 +185,49 @@ learners <- list("mean",
 )
 
 data_original <- data_original |>
-  select(W, unlist(A), "conditional_time_1", unlist(L), starts_with("mhtn_time_"), starts_with("censor"))
+  select(unlist(A), starts_with("mhtn_time_"), unlist(L), W, starts_with("censor_time_")) |>
+  as.data.frame()
 
 data_shifted_mult_all <- data_shifted_mult_all |>
-  select(W, unlist(A), "conditional_time_1", unlist(L), starts_with("mhtn_time_"), starts_with("censor"))
+  select(unlist(A), starts_with("mhtn_time_"), unlist(L), W, starts_with("censor_time_")) |>
+  as.data.frame()
 
 run_lmtp <- function(data = data_original, shifted = NULL)
 {
-  conditional_df <- data |>
-    select(conditional_time_1,# paste0("censor_time_", 1:i)
-    ) |>
-    mutate(conditional_time_1 = as.logical(conditional_time_1))
-  
-  conditional_matrix <- as.matrix(conditional_df)
-  
   res <- lmtp_tmle(data, 
                    trt = A[1:i],
                    outcome = paste0("mhtn_", c("time_1", "time_2", "time_3", "time_4", "time_5"))[1:i], 
                    baseline = W, 
                    time_vary = L[1:i],
                    cens = paste0("censor_", c("time_1", "time_2", "time_3", "time_4", "time_5"))[1:i], 
-                   conditional = conditional_matrix, 
                    outcome_type  = ifelse(i == 1, "binomial", "survival"),
                    shifted = shifted, 
                    mtp = TRUE, 
                    learners_outcome = learners,
                    learners_trt = learners,
-                   folds = 20,
+                   folds = 10,
                    control = lmtp_control(#.learners_outcome_folds = NULL,
                                           #.learners_trt_folds = NULL,
-                                          #.learners_conditional_folds = NULL,
-                                          .trim = 0.99,
-                                          .patience = 10,
-                                          .epochs = 50L,
-                                          .batch_size = 8,
-                                          .learning_rate = 0.01,
-                                          .weight_decay = 1
+                                          .trim = 0.99
                    ))
   
   res
 }
 
-for (i in 5:5)
+for (i in 2:1)
 {
+  
   set.seed(5)
   mult_all <- run_lmtp(shifted = data_shifted_mult_all)
-  saveRDS(mult_all, here::here(paste0("results_single/", "mhtn_mult_t_", i, ".rds")))
-  
+  saveRDS(mult_all, here::here(paste0("results_072225/", "mhtn_mult_t_", i, "_shifting_all_20percent.rds")))
+
+  set.seed(5)
+  obs_all <- run_lmtp(shifted = NULL)
+  saveRDS(obs_all, here::here(paste0("results_072225/", "mhtn_obs_t_", i, "_shifting_all_20percent.rds")))
+
   # set.seed(5)
   # add_all <-run_lmtp(outcome_timepoint = time, shifted = data_shifted_add_all)
   # saveRDS(add_all, here::here(paste0("results_longitudinal/", "mhtn_add_", time, "_years_observed_", ".rds")))
-  
-  set.seed(5)
-  obs_all <- run_lmtp(shifted = NULL)
-  saveRDS(obs_all, here::here(paste0("results_single/", "mhtn_obs_t_", i, ".rds")))
 }
 
 

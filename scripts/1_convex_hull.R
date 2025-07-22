@@ -15,6 +15,8 @@ set.seed(5)
   # looping through time points -- applying convex hull at each point independently 
   for (t in 1:5)
   {
+    set.seed(5)
+    
   # reading data, 359 observations non-missing at initial time
   pol_unnormalized <- covars_outcome |>
     select(newid,
@@ -60,10 +62,13 @@ set.seed(5)
   ch <- julia_call("ConvexHull", pol)
   
   # Should return the exact same values since the 'point' is in the hull
-  round(julia_call("boundary", ch, unlist(pol[2, ])), 3) == round(unlist(pol[2, ]), 3)
+  round(julia_call("boundary", ch, unlist(pol[1, ])), 3) == round(unlist(pol[1, ]), 3)
   
   # MULTIPLICATIVE SHIFT: Assume we want to perform 20% shift decreases on glyphosate and paraquat
-  shifted_mult <- as.matrix(mutate(pol, across(c(paste0("gly_kg_2_year_time_", t), paste0("paraq_kg_2_year_time_", t)), \(x) x * 0.8)))
+  #shifted_mult <- as.matrix(mutate(pol, across(c(paste0("gly_kg_2_year_time_", t), paste0("paraq_kg_2_year_time_", t)), \(x) x * 0.8)))
+  #shifted_mult <- as.matrix(mutate(pol, across(c(paste0("op_kg_2_year_time_", t), paste0("pyr_kg_2_year_time_", t), paste0("carb_kg_2_year_time_", t), paste0("neo_kg_2_year_time_", t), paste0("mn_kg_2_year_time_", t)), \(x) x * 0.8)))
+  shifted_mult <- as.matrix(mutate(pol, across(everything(), \(x) x * 0.8)))
+  
   shifted_mult_feasible <- shifted_mult
   
   for (i in 1:nrow(pol)) {
@@ -88,10 +93,10 @@ set.seed(5)
   unlist(lapply(perc_change, median)) * 100
   
   # rounding shifted to match original
-  shifted_mult_feasible <- round(shifted_mult_feasible, 2)
+  shifted_mult_feasible <- round(shifted_mult_feasible, 3)
   
   # proportion of the feasible shift equal to the desired shift (changes with rounding)
-  desired_shift <- shifted_mult_feasible == round(shifted_mult, 2)
+  desired_shift <- shifted_mult_feasible == round(shifted_mult, 3)
   prop <- mean(desired_shift) # 85.4% for rounding to 2 digits, 64.6% of individuals for rounding to 3 digits for 20% reduction at time point 1 -- choosing 3 digits for now
   prop
   

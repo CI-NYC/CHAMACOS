@@ -590,13 +590,13 @@ covars_outcome <- censored_future_vars_NA(covars_outcome) |>
          mhtn_time_5 = case_when(mhtn_time_4 == 1 ~ 1, 
                                  TRUE ~ mhtn_time_5)
   ) |>
-  mutate(censor_time_2 = case_when(censor_time_1 == 0 ~ 0, 
+  mutate(censor_time_2 = case_when(censor_time_1 == 0 ~ as.numeric(NA), 
                                    TRUE ~ censor_time_2),
-         censor_time_3 = case_when(censor_time_2 == 0 ~ 0, 
+         censor_time_3 = case_when(censor_time_2 == 0 ~ as.numeric(NA), 
                                    TRUE ~ censor_time_3),
-         censor_time_4 = case_when(censor_time_3 == 0 ~ 0, 
+         censor_time_4 = case_when(censor_time_3 == 0 ~ as.numeric(NA), 
                                    TRUE ~ censor_time_4), 
-         censor_time_5 = case_when(censor_time_4 == 0 ~ 0, 
+         censor_time_5 = case_when(censor_time_4 == 0 ~ as.numeric(NA), 
                                    TRUE ~ censor_time_5)
   )
 
