@@ -48,14 +48,17 @@ n = 407 individuals remaining
 ![](plots/CHAMACOS_Outcome.png)
 
 - File `1_convex_hull.R` contains code to scale the treatment variables and apply the convex hull at each time period independently
-  - We apply a 20% reduction shift on Glyphosate herbicides and Paraquat herbicides and keep other exposures at their observed values
-  - When applying the shift, 64.6%, 63.5%, 52.6%, 49.3%, and 55.7% of individuals stay within the bounds of the convex hull for the 20% reductions of the two herbicides at time points 1, 2, 3, 4, and 5, respectively.
-    - NOTE: the percent of individuals staying within the bounds of the convex hull changes depending on the rounding done (more rounding means more people stay in the bounds of the convex hull) -- we could consider rounding to 2 digits (85.4%, 83.7%, 80.1%, 73.7%, 78.1%.
+  - We apply a 20% reduction shift on all pesticide classes
   - For those that fall outside of the convex hull, we keep their exposures at the observed values
+    - Convex hull is just an approximation and not perfect which can lead to small issues that are not supposed to happen (e.g. exposures being increased, shifts that don't make sense)
+      - For example, even if no shift is applied to a point, the returned point might be slightly different than the original point due to numeric approximations
+      - Therefore, allow for an up to 5% tolerance such that if all variables of the feasible shifted point falls within 5% of the expected shifted point, we still allow the expected intervention/shift to occur
   
-- File `2a_analysis_local_convex_hull_multiplicative.R` contains code to conduct a longitudinal analysis on the convex hull shifted exposures
-  - This is a local analysis in which we assess the effects among those with use of Glyphosate herbicides or Paraquat herbicides in the past 2yr within 1km at the first time point. 
+- Files `2a_analysis_multiplicative_all_exposures.R` and `2b_analysis_multiplicative_first_5_exposures.R` contain code to conduct longitudinal analyses on the shifted data
   
-- File `3_analysis_local_longitudinal.R` contains code to conduct a longitudinal analysis on 20% reduction shifts on the Glyphosate herbicides and Paraquat herbicides (while keeping the remaining exposures at their observed values)
-  - This is a local analysis in which we assess the effects among those with use of Glyphosate herbicides or Paraquat herbicides in the past 2yr within 1km at the first time point. 
+Other Notes:
+
+- Can the feasible convex hull shift actually cause exposures to increase when a decrease shift is applied?
+  - Potentially: see example below where we have an observed point red A with coordinates (x,y) and decrease x by 20% and y by 80% (resulting in green point B) which falls outside of the convex hull. The closest point to point B that lies in the hull is point C. However, this results in x increasing by 44.7% (purple point C) from the observed value of x.
+  ![](plots/hypothetical_increase.png)
 

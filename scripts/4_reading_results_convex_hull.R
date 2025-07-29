@@ -24,7 +24,7 @@ isotonic_projection <- function(x, alpha = 0.05) {
 }
 
 read_results <- function(t, shift){
-  data <- readRDS((paste0("results_072225/mhtn_", shift, "_t_", t, "_shifting_all_20percent.rds")))
+  data <- readRDS((paste0("results_072225/mhtn_", shift, "_t_", t, "_shifting_first_5_20percent.rds")))
 }
 
 combined_results_list <- list()
@@ -96,7 +96,7 @@ results_plot <- base_plot +
                 aes(x = factor(t), color = shift, group = shift,
                     ymin = conf.low, ymax = conf.high), width = 0.1, 
                 position = position_dodge(width = 0.5)) + 
-  labs(x = "", y = "Incidence of Chronic Hypertension", title = "d. Reducing all 7 pesticides by 20%") +
+  labs(x = "", y = "Incidence of Chronic Hypertension", title = "d. Reducing first 5 pesticides by 20%") +
   labs(color = "Treatment Regime",
        shape = "Treatment Regime") + 
   theme_minimal() + 
@@ -119,7 +119,7 @@ contrast_plot <- ggplot(data = contrasts_df, aes(x = factor(t), y = estimate, co
   geom_point(position = position_dodge(width = 0.75)) + 
   geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.1, 
                 position = position_dodge(width = 0.75)) +
-  labs(x = "Visit Number", y = "Risk Difference (v. Observed)", title = "") +
+  labs(x = "t", y = "Risk Difference (v. Observed)", title = "") +
   geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
   scale_color_manual(values = c("#000000")) +
   scale_shape_manual(values = c(18)) +
@@ -138,5 +138,5 @@ plots_combined <- ggarrange(results_plot,
                             align = "h",
                             nrow = 2)
 
-ggsave(plot = plots_combined, filename = here::here("plots/reducing_all_exposures.pdf"),
+ggsave(plot = plots_combined, filename = here::here("plots/all_exposures.pdf"),
        width = 12, height = 9, dpi = 300, units = "in", device = pdf)

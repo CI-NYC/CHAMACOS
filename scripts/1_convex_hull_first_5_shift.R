@@ -4,21 +4,20 @@ library(tidyverse)
 
 set.seed(5)
 
-  # reading in covariates and outcomes data
-  covars_outcome <- readRDS(paste0("data/longitudinal_data_aligned.rds"))
+# reading in covariates and outcomes data
+covars_outcome <- readRDS(paste0("data/longitudinal_data_aligned.rds"))
 
-  # lists to save results 
-  shifted <- list()
-  observed <- list()
-  prop_in_convex_hull <- list()
-  R_statistic <- list()
+# lists to save results 
+shifted <- list()
+observed <- list()
+prop_in_convex_hull <- list()
+
+# looping through time points -- applying convex hull at each point independently 
+for (t in 1:5)
+{
+  set.seed(5)
   
-  # looping through time points -- applying convex hull at each point independently 
-  for (t in 1:5)
-  {
-    set.seed(5)
-    
-  # reading data, 407 observations non-missing at initial time
+  # reading data, 359 observations non-missing at initial time
   pol_unnormalized <- covars_outcome |>
     select(newid,
            paste0("op_kg_2_year_time_", t),
@@ -28,7 +27,7 @@ set.seed(5)
            paste0("mn_kg_2_year_time_", t),
            paste0("gly_kg_2_year_time_", t),
            paste0("paraq_kg_2_year_time_", t)
-           ) |>
+    ) |>
     na.omit()
   
   # scaling between 0 and 1
@@ -41,7 +40,7 @@ set.seed(5)
   
   # scaling exposures between 0 and 1
   pol <- mutate(pol, across(everything(), norm01))
-  #pol <- mutate(pol, across(everything(), \(x) round(x, 3))) # look into this more
+  #pol <- mutate(pol, across(everything(), \(x) round(x, 3)))
   
   nrow(pol)
   
@@ -69,15 +68,12 @@ set.seed(5)
   
   # add in some numerical tolerance (0.005 per variable? 5% percent?)
   
-  # MULTIPLICATIVE SHIFT: Assume we want to perform 20% shift decreases on ALL exposures
+  # MULTIPLICATIVE SHIFT: Assume we want to perform 20% shift decreases on glyphosate and paraquat
   #shifted_mult <- as.matrix(mutate(pol, across(c(paste0("gly_kg_2_year_time_", t), paste0("paraq_kg_2_year_time_", t)), \(x) x * 0.8)))
-  #shifted_mult <- as.matrix(mutate(pol, across(c(paste0("op_kg_2_year_time_", t), paste0("pyr_kg_2_year_time_", t), paste0("carb_kg_2_year_time_", t), paste0("neo_kg_2_year_time_", t), paste0("mn_kg_2_year_time_", t)), \(x) x * 0.8)))
-  shifted_mult <- as.matrix(mutate(pol, across(everything(), \(x) x * 0.8)))
+  shifted_mult <- as.matrix(mutate(pol, across(c(paste0("op_kg_2_year_time_", t), paste0("pyr_kg_2_year_time_", t), paste0("carb_kg_2_year_time_", t), paste0("neo_kg_2_year_time_", t), paste0("mn_kg_2_year_time_", t)), \(x) x * 0.8)))
+  #shifted_mult <- as.matrix(mutate(pol, across(everything(), \(x) x * 0.8)))
   
   shifted_mult_feasible <- shifted_mult
-  
-  # EXAMPLE
-  ex <- pol[c(25, 36, 117), ]
   
   for (i in 1:nrow(pol)) {
     shifted_mult_feasible[i, ] <- julia_call("boundary", ch, unlist(shifted_mult[i, ]))
@@ -120,7 +116,7 @@ set.seed(5)
   
   # returning shifts to original scale
   #shifted_mult_feasible_unnormalized <- (shifted_mult_feasible * (sapply(pol_unnormalized,function(col) max(col)) - sapply(pol_unnormalized,function(col) min(col)))) + sapply(pol_unnormalized,function(col) min(col))
-
+  
   # getting Ri statistic
   
   numerator_components <- (shifted_mult_feasible - shifted_mult)^2
@@ -256,31 +252,27 @@ set.seed(5)
   shifted[[t]] <- shifted_mult_data
   observed[[t]] <- obs_data
   R_statistic[[t]] <- R_statistic_df
-  }
-  
-  merged_shifted <- reduce(shifted, left_join, by = "newid")
-  merged_observed <- reduce(observed, left_join, by = "newid")
-  
-  covars_outcome <- covars_outcome |>
-    select(-c(starts_with("op_kg_2_year_time_"),
-       starts_with("pyr_kg_2_year_time_"),
-       starts_with("carb_kg_2_year_time_"),
-       starts_with("neo_kg_2_year_time_"),
-       starts_with("mn_kg_2_year_time_"),
-       starts_with("gly_kg_2_year_time_"),
-       starts_with("paraq_kg_2_year_time_")))
-  
-  shifted_mult_final <- covars_outcome |>
-    left_join(merged_shifted, by = c("newid" = "newid"))
-  
-  observed_final <- covars_outcome |>
-    left_join(merged_observed, by = c("newid" = "newid"))
-  
-  saveRDS(shifted_mult_final, paste0("data/shifted_data_convex_mult.rds"))
-  saveRDS(observed_final, paste0("data/observed_data.rds"))
-  saveRDS(prop_in_convex_hull, paste0("data/percent_in_convex_hull.rds"))
-  saveRDS(R_statistic, paste0("data/R_statistic.rds"))
-  
-  
-  
-  
+}
+
+merged_shifted <- reduce(shifted, left_join, by = "newid")
+merged_observed <- reduce(observed, left_join, by = "newid")
+
+covars_outcome <- covars_outcome |>
+  select(-c(starts_with("op_kg_2_year_time_"),
+            starts_with("pyr_kg_2_year_time_"),
+            starts_with("carb_kg_2_year_time_"),
+            starts_with("neo_kg_2_year_time_"),
+            starts_with("mn_kg_2_year_time_"),
+            starts_with("gly_kg_2_year_time_"),
+            starts_with("paraq_kg_2_year_time_")))
+
+shifted_mult_final <- covars_outcome |>
+  left_join(merged_shifted, by = c("newid" = "newid"))
+
+observed_final <- covars_outcome |>
+  left_join(merged_observed, by = c("newid" = "newid"))
+
+saveRDS(shifted_mult_final, paste0("data/shifted_data_convex_mult_first_5_shift.rds"))
+saveRDS(prop_in_convex_hull, paste0("data/percent_in_convex_hull_first_5_shift.rds"))
+saveRDS(R_statistic, paste0("data/R_statistic_first_5_shift.rds"))
+
