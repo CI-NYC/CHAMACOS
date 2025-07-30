@@ -81,6 +81,8 @@ n = 407 individuals remaining
         variables of the feasible shifted point falls within 5% of the
         expected shifted point, we still allow the expected
         intervention/shift to occur
+  - R statistic (distance) summary: ![](plots/R_statistic_summary.png)
+    - Little concern of extrapolation
 - Files `2a_analysis_multiplicative_all_exposures.R` and
   `2b_analysis_multiplicative_first_5_exposures.R` contain code to
   conduct longitudinal analyses on the shifted data

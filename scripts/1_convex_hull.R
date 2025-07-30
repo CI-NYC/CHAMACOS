@@ -142,7 +142,7 @@ set.seed(5)
     cbind(numerator_components, denominator_components)
   
   # only returning shifted for those in the convex hull (within the specified range); for those that fall outside, use observed treatment values
-  shifted_final <- ifelse(within_range, shifted_mult, pol) # or should it be shifted_mult_feasible?
+  shifted_final <- ifelse(within_range, shifted_mult, as.matrix(pol)) # or should it be shifted_mult_feasible?
   
   # joining shifts
   shifted_mult_data <- shifted_final |>

@@ -214,7 +214,7 @@ run_lmtp <- function(data = data_original, shifted = NULL)
   res
 }
 
-for (i in 2:1)
+for (i in 3:1)
 {
   
   set.seed(5)
