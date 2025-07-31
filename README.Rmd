@@ -54,7 +54,7 @@ n = 407 individuals remaining
       - For example, even if no shift is applied to a point, the returned point might be slightly different than the original point due to numeric approximations
       - Therefore, allow for an up to 0.005 tolerance such that if ALL variables of the feasible shifted point falls within 0.005 of the expected shifted point, we still allow the expected intervention/shift to occur
 
-- Files `1a1_R_statistic.R` and `1a2_plotting_comvex_hulls_2D_3D.R` contain exploratory code looking at extrapolation and support
+- Files `1ab_R_statistic.R` and `1ac_plotting_comvex_hulls_2D_3D.R` contain exploratory code looking at extrapolation and support
 
 - Files `2a_analysis_multiplicative_all_exposures.R` and `2b_analysis_multiplicative_first_5_exposures.R` contain code to conduct longitudinal analyses on the shifted data
   

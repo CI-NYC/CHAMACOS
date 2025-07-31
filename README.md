@@ -83,7 +83,7 @@ n = 407 individuals remaining
         the expected shifted point, we still allow the expected
         intervention/shift to occur
 
-- Files `1a1_R_statistic.R` and `1a2_plotting_comvex_hulls_2D_3D.R`
+- Files `1ab_R_statistic.R` and `1ac_plotting_comvex_hulls_2D_3D.R`
   contain exploratory code looking at extrapolation and support
 
 - Files `2a_analysis_multiplicative_all_exposures.R` and

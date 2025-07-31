@@ -43,6 +43,8 @@ set.seed(5)
   pol <- mutate(pol, across(everything(), norm01))
   #pol <- mutate(pol, across(everything(), \(x) round(x, 3))) # look into this more
   
+  saveRDS(pol, paste0("data/pol_time_", t, ".rds"))
+
   nrow(pol)
   
   psych::describe(pol) # should be between 0 and 1
