@@ -66,8 +66,9 @@ n = 407 individuals remaining
 
 ![](plots/CHAMACOS_Outcome.png)
 
-- File `1_convex_hull.R` contains code to scale the treatment variables
+- File `1a_convex_hull.R` contains code to scale the treatment variables
   and apply the convex hull at each time period independently
+
   - We apply a 20% reduction shift on all pesticide classes
   - For those that fall outside of the convex hull, we keep their
     exposures at the observed values
@@ -77,12 +78,14 @@ n = 407 individuals remaining
       - For example, even if no shift is applied to a point, the
         returned point might be slightly different than the original
         point due to numeric approximations
-      - Therefore, allow for an up to 5% tolerance such that if all
-        variables of the feasible shifted point falls within 5% of the
-        expected shifted point, we still allow the expected
+      - Therefore, allow for an up to 0.005 tolerance such that if ALL
+        variables of the feasible shifted point falls within 0.005 of
+        the expected shifted point, we still allow the expected
         intervention/shift to occur
-  - R statistic (distance) summary: ![](plots/R_statistic_summary.png)
-    - Little concern of extrapolation
+
+- Files `1a1_R_statistic.R` and `1a2_plotting_comvex_hulls_2D_3D.R`
+  contain exploratory code looking at extrapolation and support
+
 - Files `2a_analysis_multiplicative_all_exposures.R` and
   `2b_analysis_multiplicative_first_5_exposures.R` contain code to
   conduct longitudinal analyses on the shifted data

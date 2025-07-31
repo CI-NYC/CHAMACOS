@@ -11,6 +11,7 @@ covars_outcome <- readRDS(paste0("data/longitudinal_data_aligned.rds"))
 shifted <- list()
 observed <- list()
 prop_in_convex_hull <- list()
+R_statistic <- list()
 
 # looping through time points -- applying convex hull at each point independently 
 for (t in 1:5)
@@ -70,7 +71,7 @@ for (t in 1:5)
   
   # MULTIPLICATIVE SHIFT: Assume we want to perform 20% shift decreases on glyphosate and paraquat
   #shifted_mult <- as.matrix(mutate(pol, across(c(paste0("gly_kg_2_year_time_", t), paste0("paraq_kg_2_year_time_", t)), \(x) x * 0.8)))
-  shifted_mult <- as.matrix(mutate(pol, across(c(paste0("op_kg_2_year_time_", t), paste0("pyr_kg_2_year_time_", t), paste0("carb_kg_2_year_time_", t), paste0("neo_kg_2_year_time_", t), paste0("mn_kg_2_year_time_", t)), \(x) x * 0.8)))
+  shifted_mult <- as.matrix(mutate(pol, across(c(paste0("neo_kg_2_year_time_", t)), \(x) x * 0.8)))
   #shifted_mult <- as.matrix(mutate(pol, across(everything(), \(x) x * 0.8)))
   
   shifted_mult_feasible <- shifted_mult
@@ -80,7 +81,28 @@ for (t in 1:5)
   }
   
   # if input is 0 then post-correct to 0 
-  shifted_mult_feasible[pol == 0] <- 0
+  #shifted_mult_feasible[pol == 0] <- 0
+  
+  # proportion of the feasible shift "equal" (allow for some error) to the desired shift
+  within_range <- (abs(shifted_mult_feasible - shifted_mult) <= 0.005)
+  
+  within_range[is.na(within_range)] <- TRUE
+  
+  # if any value is FALSE in a row, then all values in that row set to FALSE
+  within_range[] <- !rowSums(!within_range)
+  
+  prop <- mean(within_range[, 1])
+  
+  prop_in_convex_hull[[t]] <- prop
+  
+  # if within tolerance, then use the ideal shift (feasible shift is likely numeric error)
+  shifted_mult_feasible <- ifelse(within_range, shifted_mult, shifted_mult_feasible)
+  
+  # summary statistics about the true shift
+  # NA's have to do with dividing by a zero, can be ignored
+  true_shift_mult <- shifted_mult_feasible / as.matrix(pol)
+  true_shift_mult[!is.finite(true_shift_mult)] <- NA_real_
+  summary(true_shift_mult)
   
   # calculating percent change of original to feasible shift
   perc_change <- as.matrix(shifted_mult_feasible - pol)/as.matrix(pol) |>
@@ -99,21 +121,6 @@ for (t in 1:5)
   # median percent change within each exposure getting shifted_mult
   unlist(lapply(perc_change, median)) * 100
   
-  # proportion of the feasible shift "equal" (allow for some error) to the desired shift
-  within_range <- (abs(shifted_mult_feasible - shifted_mult) / pmax(abs(shifted_mult_feasible), abs(shifted_mult)) <= 0.05)
-  
-  within_range[is.na(within_range)] <- TRUE
-  
-  prop <- mean(within_range)
-  
-  prop_in_convex_hull[[t]] <- prop
-  
-  # summary statistics about the true shift
-  # NA's have to do with dividing by a zero, can be ignored
-  true_shift_mult <- shifted_mult_feasible / as.matrix(pol)
-  true_shift_mult[!is.finite(true_shift_mult)] <- NA_real_
-  summary(true_shift_mult)
-  
   # returning shifts to original scale
   #shifted_mult_feasible_unnormalized <- (shifted_mult_feasible * (sapply(pol_unnormalized,function(col) max(col)) - sapply(pol_unnormalized,function(col) min(col)))) + sapply(pol_unnormalized,function(col) min(col))
   
@@ -122,8 +129,11 @@ for (t in 1:5)
   numerator_components <- (shifted_mult_feasible - shifted_mult)^2
   denominator_components <- (pol - shifted_mult)^2
   
-  # get overall R for entire vector
-  R <- sqrt(rowSums(numerator_components))/sqrt(rowSums(denominator_components))
+  R_numerator <- sqrt(rowSums(numerator_components))
+  
+  R_denominator <- sqrt(rowSums(denominator_components))
+  
+  R <- R_numerator/R_denominator
   R[!is.finite(R)] <- 0
   
   # get R for each pesticide
@@ -133,7 +143,9 @@ for (t in 1:5)
   colnames(numerator_components) <- paste0(colnames(numerator_components), "_numerator")
   colnames(denominator_components) <- paste0(colnames(denominator_components), "_denominator")
   
-  R_statistic_df <- data.frame(R = R) |>
+  R_statistic_df <- data.frame(R = R,
+                               R_numerator = R_numerator,
+                               R_denominator = R_denominator) |>
     cbind(R_components) |>
     cbind(numerator_components, denominator_components)
   
@@ -272,7 +284,8 @@ shifted_mult_final <- covars_outcome |>
 observed_final <- covars_outcome |>
   left_join(merged_observed, by = c("newid" = "newid"))
 
-saveRDS(shifted_mult_final, paste0("data/shifted_data_convex_mult_first_5_shift.rds"))
-saveRDS(prop_in_convex_hull, paste0("data/percent_in_convex_hull_first_5_shift.rds"))
-saveRDS(R_statistic, paste0("data/R_statistic_first_5_shift.rds"))
+saveRDS(shifted_mult_final, paste0("data/shifted_data_convex_mult_neo_shift.rds"))
+saveRDS(prop_in_convex_hull, paste0("data/percent_in_convex_hull_neo_shift.rds"))
+saveRDS(R_statistic, paste0("data/R_statistic_neo_shift.rds"))
+
 
