@@ -173,9 +173,6 @@ learners <- list("mean",
                       min_child_weight = 5, 
                       id = "xgboost1"),
                  list("xgboost", 
-                      lambda = 2, 
-                      id = "xgboost1"),
-                 list("xgboost", 
                       lambda = 5, 
                       id = "xgboost1"),
                  list("xgboost", 
@@ -214,16 +211,16 @@ run_lmtp <- function(data = data_original, shifted = NULL)
   res
 }
 
-for (i in 3:1)
+for (i in 5:5)
 {
   
   set.seed(5)
   mult_all <- run_lmtp(shifted = data_shifted_mult_all)
-  saveRDS(mult_all, here::here(paste0("results_072225/", "mhtn_mult_t_", i, "_shifting_all_20percent.rds")))
+  saveRDS(mult_all, here::here(paste0("results/", "mhtn_mult_t_", i, "_shifting_all_20percent.rds")))
 
   set.seed(5)
   obs_all <- run_lmtp(shifted = NULL)
-  saveRDS(obs_all, here::here(paste0("results_072225/", "mhtn_obs_t_", i, "_shifting_all_20percent.rds")))
+  saveRDS(obs_all, here::here(paste0("results/", "mhtn_obs_t_", i, "_shifting_all_20percent.rds")))
 
   # set.seed(5)
   # add_all <-run_lmtp(outcome_timepoint = time, shifted = data_shifted_add_all)

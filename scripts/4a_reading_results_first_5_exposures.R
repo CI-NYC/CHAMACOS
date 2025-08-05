@@ -24,7 +24,7 @@ isotonic_projection <- function(x, alpha = 0.05) {
 }
 
 read_results <- function(t, shift){
-  data <- readRDS((paste0("results_072225/mhtn_", shift, "_t_", t, "_shifting_first_5_20percent.rds")))
+  data <- readRDS((paste0("results/mhtn_", shift, "_t_", t, "_shifting_first_5_20percent.rds")))
 }
 
 combined_results_list <- list()
@@ -138,5 +138,10 @@ plots_combined <- ggarrange(results_plot,
                             align = "h",
                             nrow = 2)
 
-ggsave(plot = plots_combined, filename = here::here("plots/all_exposures.pdf"),
+ggsave(plot = plots_combined, filename = here::here("plots/first_5_exposures.pdf"),
        width = 12, height = 9, dpi = 300, units = "in", device = pdf)
+
+write.csv(combined_results_df, here::here("results_csv/results_first_5_exposures.csv"))
+write.csv(contrasts_df, here::here("results_csv/contrasts_first_5_exposures.csv"))
+
+  

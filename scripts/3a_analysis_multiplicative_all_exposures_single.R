@@ -20,35 +20,7 @@ A <- list(c("op_kg_2_year_time_1",
             "neo_kg_2_year_time_1",
             "mn_kg_2_year_time_1",
             "gly_kg_2_year_time_1",
-            "paraq_kg_2_year_time_1"),
-          c("op_kg_2_year_time_2",
-            "pyr_kg_2_year_time_2",
-            "carb_kg_2_year_time_2",
-            "neo_kg_2_year_time_2",
-            "mn_kg_2_year_time_2",
-            "gly_kg_2_year_time_2",
-            "paraq_kg_2_year_time_2"),
-          c("op_kg_2_year_time_3",
-            "pyr_kg_2_year_time_3",
-            "carb_kg_2_year_time_3",
-            "neo_kg_2_year_time_3",
-            "mn_kg_2_year_time_3",
-            "gly_kg_2_year_time_3",
-            "paraq_kg_2_year_time_3"),
-          c("op_kg_2_year_time_4",
-            "pyr_kg_2_year_time_4",
-            "carb_kg_2_year_time_4",
-            "neo_kg_2_year_time_4",
-            "mn_kg_2_year_time_4",
-            "gly_kg_2_year_time_4",
-            "paraq_kg_2_year_time_4"),
-          c("op_kg_2_year_time_5",
-            "pyr_kg_2_year_time_5",
-            "carb_kg_2_year_time_5",
-            "neo_kg_2_year_time_5",
-            "mn_kg_2_year_time_5",
-            "gly_kg_2_year_time_5",
-            "paraq_kg_2_year_time_5")
+            "paraq_kg_2_year_time_1")
 )
 
 # data_original <- data_original |>
@@ -57,7 +29,7 @@ A <- list(c("op_kg_2_year_time_1",
 #     ~ pmin(., quantile(., 0.95, na.rm = TRUE))
 #   ))
 
-data_shifted_mult_all <- readRDS(here::here("data/shifted_data_convex_mult_first_5_shift.rds")) |>
+data_shifted_mult_all <- readRDS(here::here("data/shifted_data_convex_mult.rds")) |>
   mutate(censor_time_1 = 1,
          censor_time_2 = 1,
          censor_time_3 = 1,
@@ -105,64 +77,7 @@ L <- list(
     #"ipovcat_time_1",
     "ipovcat_2_time_1",
     "hhagwork_time_1",
-    "work_cat_time_1"),
-  c(
-    "age_time_2",
-    #"marstat_time_2",
-    "marstat_2_time_2",
-    "marstat_3_time_2",
-    "marstat_4_time_2",
-    "marstat_5_time_2",
-    "marstat_6_time_2",
-    "marcat_time_2",
-    #"ipovcat_time_2",
-    "ipovcat_2_time_2",
-    "ipovcat_3_time_2",
-    "hhagwork_time_2",
-    "work_cat_time_2"
-  ),
-  c(
-    "age_time_3",
-    #"marstat_time_3",
-    "marstat_2_time_3",
-    "marstat_3_time_3",
-    "marstat_4_time_3",
-    "marstat_5_time_3",
-    "marstat_6_time_3",
-    "marcat_time_3",
-    #"ipovcat_time_3",
-    "ipovcat_2_time_3",
-    "ipovcat_3_time_3",
-    "hhagwork_time_3",
-    "work_cat_time_3"),
-  c("age_time_4",
-    #"marstat_time_4",
-    "marstat_2_time_4",
-    "marstat_3_time_4",
-    "marstat_4_time_4",
-    "marstat_5_time_4",
-    "marstat_6_time_4",
-    "marcat_time_4",
-    #"ipovcat_time_4",
-    "ipovcat_2_time_4",
-    "ipovcat_3_time_4",
-    "hhagwork_time_4",
-    #"work_cat_time_4",
-    "work_cat_time_4"),
-  c(
-    "age_time_5",
-    #"marstat_time_5",
-    "marstat_2_time_5",
-    "marstat_3_time_5",
-    "marstat_4_time_5",
-    "marstat_5_time_5",
-    "marstat_6_time_5",
-    "marcat_time_5",
-    #"ipovcat_time_5",
-    "ipovcat_2_time_5",
-    "ipovcat_3_time_5",
-    "hhagwork_time_5",
-    "work_cat_time_5")
+    "work_cat_time_1")
 ) 
 
 learners <- list("mean", 
@@ -192,12 +107,12 @@ data_shifted_mult_all <- data_shifted_mult_all |>
 run_lmtp <- function(data = data_original, shifted = NULL)
 {
   res <- lmtp_tmle(data, 
-                   trt = A[1:i],
-                   outcome = paste0("mhtn_", c("time_1", "time_2", "time_3", "time_4", "time_5"))[1:i], 
+                   trt = A,
+                   outcome = paste0("mhtn_", c("time_5")), 
                    baseline = W, 
-                   time_vary = L[1:i],
-                   cens = paste0("censor_", c("time_1", "time_2", "time_3", "time_4", "time_5"))[1:i], 
-                   outcome_type  = ifelse(i == 1, "binomial", "survival"),
+                   time_vary = L,
+                   cens = paste0("censor_", c("time_5")), 
+                   outcome_type  = "binomial",
                    shifted = shifted, 
                    mtp = TRUE, 
                    learners_outcome = learners,
@@ -211,21 +126,15 @@ run_lmtp <- function(data = data_original, shifted = NULL)
   res
 }
 
-for (i in 4:4)
-{
-  
+
   set.seed(5)
   mult_all <- run_lmtp(shifted = data_shifted_mult_all)
-  saveRDS(mult_all, here::here(paste0("results/", "mhtn_mult_t_", i, "_shifting_first_5_20percent.rds")))
+  saveRDS(mult_all, here::here(paste0("results/", "mhtn_mult_shifting_all_20percent_single.rds")))
   
   set.seed(5)
   obs_all <- run_lmtp(shifted = NULL)
-  saveRDS(obs_all, here::here(paste0("results/", "mhtn_obs_t_", i, "_shifting_first_5_20percent.rds")))
+  saveRDS(obs_all, here::here(paste0("results/", "mhtn_obs_shifting_all_20percent_single.rds")))
   
   # set.seed(5)
   # add_all <-run_lmtp(outcome_timepoint = time, shifted = data_shifted_add_all)
   # saveRDS(add_all, here::here(paste0("results_longitudinal/", "mhtn_add_", time, "_years_observed_", ".rds")))
-}
-
-
-
