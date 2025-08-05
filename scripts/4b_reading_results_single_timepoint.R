@@ -253,7 +253,7 @@ plots_combined <- ggarrange(results_plot,
                             align = "h",
                             nrow = 2)
 
-ggsave(plot = plots_combined, filename = here::here("plots/first_5_single_timepoint.pdf"),
+ggsave(plot = plots_combined, filename = here::here("plots/reducing_first_5_single_timepoint.pdf"),
        width = 12, height = 9, dpi = 300, units = "in", device = pdf)
 
 contrasts_df <- contrasts_df |>
