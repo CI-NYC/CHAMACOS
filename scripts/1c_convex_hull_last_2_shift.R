@@ -84,13 +84,9 @@ for (t in 1:5)
   #shifted_mult_feasible[pol == 0] <- 0
   
   # proportion of the feasible shift "equal" (allow for some error) to the desired shift
-<<<<<<< HEAD
   within_error_range <- (abs(shifted_mult_feasible - shifted_mult) <= 0.006)
-=======
-  within_error_range <- (abs(shifted_mult_feasible - shifted_mult) <= 0.005)
->>>>>>> 8bacab09e347123fa4c726b5437c89e531d7b656
-  
-  within_error_range[is.na(within_error_range)] <- TRUE
+
+    within_error_range[is.na(within_error_range)] <- TRUE
   
   # if any value is FALSE in a row, then all values in that row set to FALSE
   within_error_range[] <- !rowSums(!within_error_range)
