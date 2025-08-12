@@ -106,19 +106,15 @@ set.seed(5)
   }
   
   # proportion of the feasible shift "equal" (allow for some error) to the desired shift
-  within_range <- (abs(shifted_mult_feasible - shifted_mult) <= 0.005)
+  within_error_range <- (abs(shifted_mult_feasible - shifted_mult) <= 0.005)
   
-  within_range[is.na(within_range)] <- TRUE
+  within_error_range[is.na(within_error_range)] <- TRUE
   
   # if any value is FALSE in a row, then all values in that row set to FALSE (the entire row needs to meet the tolerance)
-  within_range[] <- !rowSums(!within_range)
-  
-  prop <- mean(within_range[, 1])
-  
-  prop_in_convex_hull[[t]] <- prop
+  within_error_range[] <- !rowSums(!within_error_range)
   
   # if within tolerance, then use the ideal shift (feasible shift is likely numeric error)
-  shifted_mult_feasible <- ifelse(within_range, shifted_mult, shifted_mult_feasible)
+  shifted_mult_feasible <- ifelse(within_error_range, shifted_mult, shifted_mult_feasible)
   
   # summary statistics about the true shift
   # NA's have to do with dividing by a zero, can be ignored
@@ -172,8 +168,16 @@ set.seed(5)
     cbind(R_components) |>
     cbind(numerator_components, denominator_components)
   
-  # only returning shifted for those in the convex hull (within the specified range); for those that fall outside, use observed treatment values
-  shifted_final <- ifelse(within_range, shifted_mult, as.matrix(pol))
+  # only returning shifted for those in the convex hull (within the specified error + range); for those that fall outside, use observed treatment values
+  specified_01_range <- as.matrix(cbind(R_numerator, R_numerator, R_numerator, R_numerator, R_numerator, R_numerator, R_numerator))
+  
+  in_hull <- within_error_range | specified_01_range <= 0.1
+  
+  shifted_final <- ifelse(in_hull, shifted_mult, as.matrix(pol))
+  
+  prop <- mean(in_hull[, 1])
+  
+  prop_in_convex_hull[[t]] <- prop
   
   # joining shifts
   shifted_mult_data <- shifted_final |>
@@ -187,102 +191,6 @@ set.seed(5)
     cbind(pol_unnormalized$newid) |>
     rename("newid" = "pol_unnormalized$newid") |>
     relocate(newid, .before = )
-  
-  # summary statistics about 1). those getting shifted above observed and 2). those getting shifted below observed forlast 2 exposures
-  
-  # shifted above observed
-  
-  # row_indices_gly <- which(shifted_mult_feasible[, 6] > as.matrix(pol)[, 6])
-  # shifted_mult_data[row_indices_gly, ] |> select(-newid) |> summary() 
-  # 
-  # row_indices_paraq <- which(shifted_mult_feasible[, 7] > as.matrix(pol)[, 7])
-  # shifted_mult_data[row_indices_paraq, ] |> select(-newid) |> summary() 
-  # 
-  # # shifted below observed
-  # 
-  # row_indices_gly <- which(shifted_mult_feasible[, 6] < as.matrix(pol)[, 6])
-  # shifted_mult_data[row_indices_gly, ] |> select(-newid) |> summary() 
-  # 
-  # row_indices_paraq <- which(shifted_mult_feasible[, 7] < as.matrix(pol)[, 7])
-  # shifted_mult_data[row_indices_paraq, ] |> select(-newid) |> summary() 
-  
-  # ADDITIVE SHIFT: Assume we want to perform a 10 unit (scaled) decrease
-  
-  # # calculating 10 unit shift on normalized scale
-  # additive_scale <- sapply(pol_unnormalized, function(col) (10 - min(col)) / (max(col) - min(col)))
-  # 
-  # additive_scale <- additive_scale[c(5, 7)]
-  # 
-  # shifted_add <- as.matrix(sweep(pol[c(5, 7)], 2, additive_scale, "-"))
-  # 
-  # shifted_add <- cbind(as.matrix(pol[c(1, 2, 3, 4, 6)]), shifted_add)
-  # shifted_add_feasible <- shifted_add
-  # 
-  # for (i in 1:nrow(pol)) {
-  #   shifted_add_feasible[i, ] <- julia_call("boundary", ch, unlist(shifted_add[i, ]))
-  # }
-  # 
-  # units_change <- as.matrix(shifted_add_feasible - pol) |>
-  #   as.data.frame()
-  # 
-  # # turning Inf -> NA -> 0
-  # is.na(units_change)<-sapply(units_change, is.infinite)
-  # units_change[is.na(units_change)]<-0
-  # 
-  # # unscaling the additive shift for summary statistics
-  # units_change_unscaled <- (units_change * (sapply(pol_unnormalized,function(col) max(col)) - sapply(pol_unnormalized,function(col) min(col)))) + sapply(pol_unnormalized,function(col) min(col))
-  # 
-  # # mean unit change within each exposure getting shifted_add
-  # colMeans(units_change_unscaled)
-  # 
-  # # median unit change within each exposure getting shifted_add
-  # unlist(lapply(units_change_unscaled, median))
-  # 
-  # # proportion the feasible shift equaled the desired shift
-  # mean(shifted_add_feasible == shifted_add) # 0% for 10 unit shift
-  # 
-  # # summary statistics about the true shift
-  # # NA's have to do with dividing by a zero, can be ignored
-  # true_shift_add <- shifted_add_feasible / as.matrix(pol)
-  # true_shift_add[!is.finite(true_shift_add)] <- NA_real_
-  # summary(true_shift_add)
-  # 
-  # # joining shifts
-  # shifted_add_feasible_unnormalized_units_changed <- (units_change * (sapply(pol_unnormalized,function(col) max(col)) - sapply(pol_unnormalized,function(col) min(col)))) + sapply(pol_unnormalized,function(col) min(col))
-  # summary(shifted_add_feasible_unnormalized_units_changed)
-  # 
-  # # returning shifts to original scale
-  # #shifted_add_feasible_unnormalized <- (shifted_add_feasible * (sapply(pol_unnormalized,function(col) max(col)) - sapply(pol_unnormalized,function(col) min(col)))) + sapply(pol_unnormalized,function(col) min(col))
-  # 
-  # shifted_add_feasible <- round(shifted_add_feasible, 3)
-  # 
-  # shifted_add_data <- shifted_add_feasible |>
-  #   as.data.frame() |>
-  #   cbind(covars_outcome) |>
-  #   relocate(newid, .before = ) # make it the first column
-  # 
-  # # summary statistics about 1). those getting shifted above observed and 2). those getting shifted below observed forlast 2 exposures
-  # 
-  # # shifted above observed
-  # 
-  # row_indices_gly <- which(shifted_add_feasible[, 6] > as.matrix(pol)[, 6]) # X shifted above
-  # shifted_add_data[row_indices_gly, ] |> select(-newid) |> summary()
-  # 
-  # row_indices_paraq <- which(shifted_add_feasible[, 7] > as.matrix(pol)[, 7]) # X shifted above
-  # shifted_add_data[row_indices_paraq, ] |> select(-newid) |> summary()
-  # 
-  # # shifted below observed
-  # 
-  # row_indices_gly <- which(shifted_add_feasible[, 6] < as.matrix(pol)[, 6]) # X shifted below
-  # shifted_add_data[row_indices_gly, ] |> select(-newid) |> summary()
-  # 
-  # row_indices_paraq <- which(shifted_add_feasible[, 7] < as.matrix(pol)[, 7]) # X shifted below
-  # shifted_add_data[row_indices_paraq, ] |> select(-newid) |> summary()
-  
-  #shifted_add_extrapolate <- original_data[, 2:8]
-  #shifted_add_extrapolate_df <- sweep(shifted_add_extrapolate, 2, additive_scale, "-")
-  
-  #saveRDS(shifted_add_data, paste0("data/shifted_data_convex_add_time_1.rds"))
   
   shifted[[t]] <- shifted_mult_data
   observed[[t]] <- obs_data

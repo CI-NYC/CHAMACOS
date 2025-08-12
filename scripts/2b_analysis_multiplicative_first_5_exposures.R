@@ -211,16 +211,16 @@ run_lmtp <- function(data = data_original, shifted = NULL)
   res
 }
 
-for (i in 4:4)
+for (i in 2:1)
 {
   
   set.seed(5)
   mult_all <- run_lmtp(shifted = data_shifted_mult_all)
   saveRDS(mult_all, here::here(paste0("results/", "mhtn_mult_t_", i, "_shifting_first_5_20percent.rds")))
   
-  set.seed(5)
-  obs_all <- run_lmtp(shifted = NULL)
-  saveRDS(obs_all, here::here(paste0("results/", "mhtn_obs_t_", i, "_shifting_first_5_20percent.rds")))
+  # set.seed(5)
+  # obs_all <- run_lmtp(shifted = NULL)
+  # saveRDS(obs_all, here::here(paste0("results/", "mhtn_obs_t_", i, "_shifting_first_5_20percent.rds")))
   
   # set.seed(5)
   # add_all <-run_lmtp(outcome_timepoint = time, shifted = data_shifted_add_all)

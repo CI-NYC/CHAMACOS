@@ -281,7 +281,7 @@ data <- data |>
                                 is.na(age_18y) & is.na(age_10_5y) == FALSE ~ age_10_5y + 7.5, # approximation,
                                 is.na(age_18y) & is.na(age_9y) == FALSE ~ age_9y + 9, # approximation
                                 TRUE ~ age_18y),
-            age_mc1 = case_when(is.na(bodyage_mc1) & is.na(age_18y) == FALSE ~ age_18y - 2, # approximation
+            age_mc1 = case_when(is.na(bodyage_mc1) & is.na(age_18y) == FALSE ~ age_18y + 2, # approximation
                                 is.na(bodyage_mc1) & is.na(age_16y) == FALSE ~ age_18y + 4, # approximation
                                 is.na(bodyage_mc1) & is.na(age_12y) == FALSE ~ age_12y + 8, # approximation
                                 is.na(bodyage_mc1) & is.na(age_10_5y) == FALSE ~ age_10_5y + 9.5, # approximation,
@@ -390,6 +390,9 @@ data <- data |>
     select(-c(starts_with("povcat"), "work_12y", starts_with("bodyage")))
 
 summary(covars_outcome)
+
+# ensure all ages are stricly increasing
+apply(covars_outcome |> select(starts_with("age")), 1, function(row) all(diff(row) > 0))
   
 saveRDS(covars_outcome, paste0("data/longitudinal_data_pre_aligned.rds"))
 
@@ -658,3 +661,6 @@ covars_outcome |> group_by(is.na(mhtn_time_4), is.na(mhtn_time_3) == FALSE, firs
 covars_outcome |> group_by(is.na(mhtn_time_5), is.na(mhtn_time_4) == FALSE, first_obs != "12y") |> summarize(count = n())
 
 covars_outcome |> group_by(first_obs) |> summarize(count = n())
+
+
+

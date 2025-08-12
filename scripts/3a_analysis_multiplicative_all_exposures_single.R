@@ -12,7 +12,10 @@ norm01 <- function(x) {
   (x - min(x)) / (max(x) - min(x))
 }
 
-data_original <- readRDS(here::here(paste0("data/observed_data.rds"))) 
+data_original <- readRDS(here::here(paste0("data/observed_data.rds"))) |>
+  mutate(censor_time_5 = case_when(mhtn_time_4 == 1 ~ 1,
+                                   is.na(censor_time_5) ~ 0,
+                                   TRUE ~ censor_time_5))
 
 A <- list(c("op_kg_2_year_time_1",
             "pyr_kg_2_year_time_1",

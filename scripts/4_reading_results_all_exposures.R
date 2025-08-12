@@ -129,7 +129,8 @@ contrast_plot <- ggplot(data = contrasts_df, aes(x = factor(t), y = estimate, co
   theme(
     legend.position =  "none",
     plot.margin = unit(c(5.5, 5.5, 5.5, 9.5), "pt")
-  )
+  ) +
+  ylim(-0.12, 0.03)
 
 
 plots_combined <- ggarrange(results_plot, 
