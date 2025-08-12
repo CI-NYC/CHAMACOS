@@ -39,6 +39,46 @@ set.seed(5)
   pol <- pol_unnormalized |>
     select(-newid)
   
+  pol_tmp <- pol |>
+    rename("organophosphates" = "op_kg_2_year_time_1",
+           "pyrethroids" = "pyr_kg_2_year_time_1",
+           "carbamates" = "carb_kg_2_year_time_1",
+           "neonicotinoids" = "neo_kg_2_year_time_1",
+           "maganese" = "mn_kg_2_year_time_1",
+           "glyphosates" = "gly_kg_2_year_time_1",
+           "paraquats" = "paraq_kg_2_year_time_1"
+           )
+    
+  corr <- cor(pol_tmp)
+  
+  pdf(file = paste0("plots/correlation_matrix_plot_", t, ".pdf"))
+  corr_plot <- corrplot::corrplot(corr, 
+                     method = "shade", 
+                     type = "full", 
+                     addCoef.col = "black",
+                     number.cex = 0.8,
+                     tl.col = "black",
+                     diag = TRUE,             
+                     addCoefasPercent = FALSE,
+                     tl.srt = 45
+                     )
+  dev.off()
+  
+  pol_tmp_long <- pol_tmp |>
+    pivot_longer(cols = everything(), 
+                 names_to = "variable", 
+                 values_to = "value")
+  
+  density <- ggplot(pol_tmp_long, aes(x = value)) +
+    geom_density(fill = "salmon2", alpha = 0.5) +
+    facet_wrap(~ variable, scales = "free_x", nrow = 2) +
+    theme_minimal() +
+    labs(title = "", 
+         x = "Value",
+         y = "Density")
+  
+  ggsave(plot = density, filename = paste0("plots/baselinedistribution_trunc", t, ".pdf"))
+  
   # scaling exposures between 0 and 1
   pol <- mutate(pol, across(everything(), norm01))
   #pol <- mutate(pol, across(everything(), \(x) round(x, 3))) # look into this more

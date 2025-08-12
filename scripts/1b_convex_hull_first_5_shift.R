@@ -84,7 +84,7 @@ for (t in 1:5)
   #shifted_mult_feasible[pol == 0] <- 0
   
   # proportion of the feasible shift "equal" (allow for some error) to the desired shift
-  within_error_range <- (abs(shifted_mult_feasible - shifted_mult) <= 0.005)
+  within_error_range <- (abs(shifted_mult_feasible - shifted_mult) <= 0.006)
   
   within_error_range[is.na(within_error_range)] <- TRUE
   

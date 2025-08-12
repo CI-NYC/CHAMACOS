@@ -6,5 +6,5 @@ data
 results
 results_longitudinal
 scripts/old
-results*
 lmtp
+plots/old
