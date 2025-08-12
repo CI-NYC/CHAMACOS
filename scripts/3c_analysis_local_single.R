@@ -1,21 +1,21 @@
-#remotes::install_github("nt-williams/lmtp@mlr3superlearner") -- use personal version
-
+#remotes::install_github("nt-williams/lmtp@local-riesznet")
 library(lmtp)
 library(mlr3extralearners)
 library(earth)
 library(ranger)
 library(xgboost)
 library(tidyverse)
-library(data.table)
 
 norm01 <- function(x) {
   (x - min(x)) / (max(x) - min(x))
 }
 
-data_original <- readRDS(here::here(paste0("data/observed_data.rds"))) |>
+data_original <- readRDS(paste0("data/longitudinal_data_aligned.rds")) |>
   mutate(censor_time_5 = case_when(mhtn_time_4 == 1 ~ 1,
                                    is.na(censor_time_5) ~ 0,
-                                   TRUE ~ censor_time_5))
+                                   TRUE ~ censor_time_5)) |>
+  mutate(conditional_time_1 = case_when(gly_kg_2_year_time_1 >= 25 & paraq_kg_2_year_time_1 >= 5 ~ 1, 
+                                        TRUE ~ 0)) 
 
 A <- list(c("op_kg_2_year_time_1",
             "pyr_kg_2_year_time_1",
@@ -32,7 +32,13 @@ A <- list(c("op_kg_2_year_time_1",
 #     ~ pmin(., quantile(., 0.95, na.rm = TRUE))
 #   ))
 
-data_shifted_mult_all <- readRDS(here::here("data/shifted_data_convex_mult.rds")) |>
+data_shifted_mult_all <- readRDS(paste0("data/longitudinal_data_aligned.rds")) |>
+  mutate(conditional_time_1 = case_when(gly_kg_2_year_time_1 >= 25 & paraq_kg_2_year_time_1 >= 5 ~ 1, 
+                                        TRUE ~ 0))  |>
+  mutate(gly_kg_2_year_time_1 = gly_kg_2_year_time_1 * 0.8, # shifting gly down by 20% 
+         paraq_kg_2_year_time_1 = paraq_kg_2_year_time_1 * 0.8# shifting paraq down by 20% 
+    
+  ) |>
   mutate(censor_time_1 = 1,
          censor_time_2 = 1,
          censor_time_3 = 1,
@@ -47,24 +53,7 @@ W <- c("cham",
        "educat_bl_3", 
        "hbp_bl", 
        "diab_bl", 
-       "born_in_usa"#,
-       #"diabage_bl"#,
-       # "age_9y",
-       # #"marstat_9y",
-       # "marstat_9y_2",
-       # "marstat_9y_3",
-       # "marstat_9y_4",
-       # "marstat_9y_5",
-       # "marstat_9y_6",
-       # "marcat_9y",
-       # #"ipovcat_9y",
-       # "ipovcat_9y_2",
-       # "ipovcat_9y_3",
-       # "hhagwork_9y",
-       # #"work_cat_9y",
-       # "work_cat_9y_1",
-       # "work_cat_9y_2",
-       # "work_cat_9y_3"
+       "born_in_usa"
 )
 
 L <- list(
@@ -100,44 +89,62 @@ learners <- list("mean",
 )
 
 data_original <- data_original |>
-  select(unlist(A), starts_with("mhtn_time_"), unlist(L), W, starts_with("censor_time_")) |>
+  select(unlist(A), starts_with("mhtn_time_"), unlist(L), W, starts_with("censor_time_"), "conditional_time_1") |>
   as.data.frame()
 
 data_shifted_mult_all <- data_shifted_mult_all |>
-  select(unlist(A), starts_with("mhtn_time_"), unlist(L), W, starts_with("censor_time_")) |>
+  select(unlist(A), starts_with("mhtn_time_"), unlist(L), W, starts_with("censor_time_"), "conditional_time_1") |>
   as.data.frame()
 
 run_lmtp <- function(data = data_original, shifted = NULL)
 {
+  conditional_df <- data |>
+    select(conditional_time_1,# paste0("censor_time_", 1:i)
+    ) |>
+    mutate(conditional_time_1 = as.logical(conditional_time_1))
+  
+  n <- nrow(data)
+  
+  conditional_matrix <- as.matrix(conditional_df)
+  
   res <- lmtp_tmle(data, 
                    trt = A,
-                   outcome = paste0("mhtn_", c("time_5")), 
+                   outcome = "mhtn_time_5", 
                    baseline = W, 
                    time_vary = L,
-                   cens = paste0("censor_", c("time_5")), 
+                   cens = "censor_time_5", 
+                   conditional = conditional_matrix, 
                    outcome_type  = "binomial",
                    shifted = shifted, 
                    mtp = TRUE, 
                    learners_outcome = learners,
                    learners_trt = learners,
                    folds = 10,
-                   control = lmtp_control(#.learners_outcome_folds = NULL,
-                     #.learners_trt_folds = NULL,
-                     .trim = 0.99
+                   control = lmtp_control(#.learners_outcome_folds = 5,
+                     #.learners_trt_folds = 5,
+                     #.learners_conditional_folds = 5,
+                     .trim = 0.99,
+                     .patience = 10,
+                     .epochs = 50L,
+                     .batch_size = 8,
+                     .learning_rate = 0.01,
+                     .weight_decay = 1
                    ))
   
   res
 }
 
 
-  set.seed(5)
-  mult_all <- run_lmtp(shifted = data_shifted_mult_all)
-  saveRDS(mult_all, here::here(paste0("results/", "mhtn_mult_shifting_all_20percent_single.rds")))
-  
-  set.seed(5)
-  obs_all <- run_lmtp(shifted = NULL)
-  saveRDS(obs_all, here::here(paste0("results/", "mhtn_obs_shifting_all_20percent_single.rds")))
-  
-  # set.seed(5)
-  # add_all <-run_lmtp(outcome_timepoint = time, shifted = data_shifted_add_all)
-  # saveRDS(add_all, here::here(paste0("results_longitudinal/", "mhtn_add_", time, "_years_observed_", ".rds")))
+set.seed(5)
+mult_all <- run_lmtp(shifted = data_shifted_mult_all)
+saveRDS(mult_all, here::here(paste0("results/", "local_mult.rds")))
+
+set.seed(5)
+obs_all <- run_lmtp(shifted = NULL)
+saveRDS(obs_all, here::here(paste0("results/", "local_obs.rds")))
+
+obs_all <- readRDS(here::here(paste0("results/", "local_obs.rds")))
+mult_all <- readRDS(here::here(paste0("results/", "local_mult.rds")))
+
+lmtp_contrast(mult_all, ref = obs_all)
+

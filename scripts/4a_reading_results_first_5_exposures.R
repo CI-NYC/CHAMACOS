@@ -24,7 +24,13 @@ isotonic_projection <- function(x, alpha = 0.05) {
 }
 
 read_results <- function(t, shift){
+  if (shift == "mult")
+  {
   data <- readRDS((paste0("results/mhtn_", shift, "_t_", t, "_shifting_first_5_20percent.rds")))
+  } else if (shift == "obs")
+  {
+    data <- readRDS((paste0("results/mhtn_", shift, "_t_", t, "_shifting_all_20percent.rds")))
+  }
 }
 
 combined_results_list <- list()
@@ -129,7 +135,9 @@ contrast_plot <- ggplot(data = contrasts_df, aes(x = factor(t), y = estimate, co
   theme(
     legend.position =  "none",
     plot.margin = unit(c(5.5, 5.5, 5.5, 9.5), "pt")
-  )
+  ) +
+  ylim(-0.12, 0.03)
+
 
 
 plots_combined <- ggarrange(results_plot, 

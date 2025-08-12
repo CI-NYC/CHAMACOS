@@ -122,16 +122,17 @@ contrast_plot <- ggplot(data = contrasts_df, aes(x = factor(t), y = estimate, co
   theme(
     legend.position =  "none",
     plot.margin = unit(c(5.5, 5.5, 5.5, 9.5), "pt")
-  )
+  ) +
+  ylim (-0.06, 0.02)
 
 
-plots_combined <- ggarrange(results_plot, 
+plots_combined_all <- ggarrange(results_plot, 
                             contrast_plot,
                             labels = c("A", "B"),
                             align = "h",
                             nrow = 2)
 
-ggsave(plot = plots_combined, filename = here::here("plots/all_exposures_single_timepoint.pdf"),
+ggsave(plot = plots_combined_all, filename = here::here("plots/all_exposures_single_timepoint.pdf"),
        width = 12, height = 9, dpi = 300, units = "in", device = pdf)
 
 contrasts_df <- contrasts_df |>
@@ -146,7 +147,13 @@ write.csv(contrasts_df, here::here("results_csv/contrasts_all_exposures_single_t
 ##### FIRST 5
 
 read_results <- function(shift){
-  data <- readRDS((paste0("results/mhtn_", shift, "_shifting_first_5_20percent_single.rds")))
+  if (shift == "mult")
+  {
+    data <- readRDS("results/mhtn_mult_shifting_first_5_20percent_single.rds")
+  } else if (shift == "obs")
+  {
+    data <- readRDS("results/mhtn_obs_shifting_first_5_20percent_single.rds")
+  }
 }
 
 combined_results_list <- list()
@@ -244,16 +251,17 @@ contrast_plot <- ggplot(data = contrasts_df, aes(x = factor(t), y = estimate, co
   theme(
     legend.position =  "none",
     plot.margin = unit(c(5.5, 5.5, 5.5, 9.5), "pt")
-  )
+  ) +
+  ylim (-0.06, 0.02)
 
 
-plots_combined <- ggarrange(results_plot, 
+plots_combined_first_5 <- ggarrange(results_plot, 
                             contrast_plot,
-                            labels = c("A", "B"),
+                            labels = c("C", "D"),
                             align = "h",
                             nrow = 2)
 
-ggsave(plot = plots_combined, filename = here::here("plots/reducing_first_5_single_timepoint.pdf"),
+ggsave(plot = plots_combined_first_5, filename = here::here("plots/reducing_first_5_single_timepoint.pdf"),
        width = 12, height = 9, dpi = 300, units = "in", device = pdf)
 
 contrasts_df <- contrasts_df |>
@@ -264,3 +272,12 @@ combined_results_df <- combined_results_df |>
 
 write.csv(combined_results_df, here::here("results_csv/results_first_5_single_timepoint.csv"))
 write.csv(contrasts_df, here::here("results_csv/contrasts_first_5_single_timepoint.csv"))
+
+
+plots_combined_final <- ggarrange(plots_combined_all, 
+                                  plots_combined_first_5,
+                                    align = "h",
+                                    nrow = 1)
+
+ggsave(plot = plots_combined_final, filename = here::here("plots/single_timepoint_final.pdf"),
+       width = 12, height = 9, dpi = 300, units = "in", device = pdf)
