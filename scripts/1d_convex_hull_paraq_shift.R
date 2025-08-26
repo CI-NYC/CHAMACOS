@@ -4,21 +4,21 @@ library(tidyverse)
 
 set.seed(5)
 
-  # reading in covariates and outcomes data
-  covars_outcome <- readRDS(paste0("data/longitudinal_data_aligned.rds"))
+# reading in covariates and outcomes data
+covars_outcome <- readRDS(paste0("data/longitudinal_data_aligned.rds"))
 
-  # lists to save results 
-  shifted <- list()
-  observed <- list()
-  prop_in_convex_hull <- list()
-  R_statistic <- list()
+# lists to save results 
+shifted <- list()
+observed <- list()
+prop_in_convex_hull <- list()
+R_statistic <- list()
+
+# looping through time points -- applying convex hull at each point independently 
+for (t in 1:5)
+{
+  set.seed(5)
   
-  # looping through time points -- applying convex hull at each point independently 
-  for (t in 1:5)
-  {
-    set.seed(5)
-    
-  # reading data, 407 observations non-missing at initial time
+  # reading data, 359 observations non-missing at initial time
   pol_unnormalized <- covars_outcome |>
     select(newid,
            paste0("op_kg_2_year_time_", t),
@@ -28,7 +28,7 @@ set.seed(5)
            paste0("mn_kg_2_year_time_", t),
            paste0("gly_kg_2_year_time_", t),
            paste0("paraq_kg_2_year_time_", t)
-           ) |>
+    ) |>
     na.omit()
   
   # scaling between 0 and 1
@@ -39,54 +39,10 @@ set.seed(5)
   pol <- pol_unnormalized |>
     select(-newid)
   
-  if (t == 1)
-  {  
-  pol_tmp <- pol |>
-    rename("organophosphates" = "op_kg_2_year_time_1",
-           "pyrethroids" = "pyr_kg_2_year_time_1",
-           "carbamates" = "carb_kg_2_year_time_1",
-           "neonicotinoids" = "neo_kg_2_year_time_1",
-           "maganese" = "mn_kg_2_year_time_1",
-           "glyphosates" = "gly_kg_2_year_time_1",
-           "paraquats" = "paraq_kg_2_year_time_1"
-           )
-    
-  corr <- cor(pol_tmp)
-  
-  pdf(file = paste0("plots/correlation_matrix_plot_", t, ".pdf"))
-  corr_plot <- corrplot::corrplot(corr, 
-                     method = "shade", 
-                     type = "full", 
-                     addCoef.col = "black",
-                     number.cex = 0.8,
-                     tl.col = "black",
-                     diag = TRUE,             
-                     addCoefasPercent = FALSE,
-                     tl.srt = 45
-                     )
-  dev.off()
-  
-  pol_tmp_long <- pol_tmp |>
-    pivot_longer(cols = everything(), 
-                 names_to = "variable", 
-                 values_to = "value")
-  
-  density <- ggplot(pol_tmp_long, aes(x = value)) +
-    geom_density(fill = "salmon2", alpha = 0.5) +
-    facet_wrap(~ variable, scales = "free_x", nrow = 2) +
-    theme_minimal() +
-    labs(title = "", 
-         x = "Value",
-         y = "Density")
-  
-  ggsave(plot = density, filename = paste0("plots/baselinedistribution_trunc", t, ".pdf"))
-  }
   # scaling exposures between 0 and 1
   pol <- mutate(pol, across(everything(), norm01))
-  #pol <- mutate(pol, across(everything(), \(x) round(x, 3))) # look into this more
+  #pol <- mutate(pol, across(everything(), \(x) round(x, 3)))
   
-  saveRDS(pol, paste0("data/pol_time_", t, ".rds"))
-
   nrow(pol)
   
   psych::describe(pol) # should be between 0 and 1
@@ -111,48 +67,28 @@ set.seed(5)
   
   abs(julia_call("boundary", ch, unlist(pol[1, ])) - unlist(pol[1, ]))
   
-  # checking to see how much numerical tolerance to add (0.005 per exposure seems safe?)
-  for (i in 1:nrow(pol))
-  {
-    if (i > 1)
-    {
-      x <- abs(julia_call("boundary", ch, unlist(pol[i, ])) - unlist(pol[i, ]))
-      
-      x <- t(x)
-      
-      x <- x_new |>
-        rbind(x)
-      
-    }else {
-      x <- abs(julia_call("boundary", ch, unlist(pol[i, ])) - unlist(pol[i, ]))
-      
-      x <- t(x)
-    }
-    
-    x_new <- x
-  }
+  # add in some numerical tolerance (0.005 per variable? 5% percent?)
   
-  summary(x)
-  
-  # MULTIPLICATIVE SHIFT: Assume we want to perform 20% shift decreases on ALL exposures
+  # MULTIPLICATIVE SHIFT: Assume we want to perform 20% shift decreases on glyphosate and paraquat
   #shifted_mult <- as.matrix(mutate(pol, across(c(paste0("gly_kg_2_year_time_", t), paste0("paraq_kg_2_year_time_", t)), \(x) x * 0.8)))
-  #shifted_mult <- as.matrix(mutate(pol, across(c(paste0("op_kg_2_year_time_", t), paste0("pyr_kg_2_year_time_", t), paste0("carb_kg_2_year_time_", t), paste0("neo_kg_2_year_time_", t), paste0("mn_kg_2_year_time_", t)), \(x) x * 0.8)))
-  shifted_mult <- as.matrix(mutate(pol, across(everything(), \(x) x * 0.8)))
+  shifted_mult <- as.matrix(mutate(pol, across(c(paste0("paraq_kg_2_year_time_", t)), \(x) x * 0.8)))
+  #shifted_mult <- as.matrix(mutate(pol, across(everything(), \(x) x * 0.8)))
   
   shifted_mult_feasible <- shifted_mult
-  
-  #ex <- pol[c(25, 36, 117), ] # example 3 points
   
   for (i in 1:nrow(pol)) {
     shifted_mult_feasible[i, ] <- julia_call("boundary", ch, unlist(shifted_mult[i, ]))
   }
+  
+  # if input is 0 then post-correct to 0 
+  #shifted_mult_feasible[pol == 0] <- 0
   
   # proportion of the feasible shift "equal" (allow for some error) to the desired shift
   within_error_range <- (abs(shifted_mult_feasible - shifted_mult) <= 0.006)
   
   within_error_range[is.na(within_error_range)] <- TRUE
   
-  # if any value is FALSE in a row, then all values in that row set to FALSE (the entire row needs to meet the tolerance)
+  # if any value is FALSE in a row, then all values in that row set to FALSE
   within_error_range[] <- !rowSums(!within_error_range)
   
   # if within tolerance, then use the ideal shift (feasible shift is likely numeric error)
@@ -183,13 +119,12 @@ set.seed(5)
   
   # returning shifts to original scale
   #shifted_mult_feasible_unnormalized <- (shifted_mult_feasible * (sapply(pol_unnormalized,function(col) max(col)) - sapply(pol_unnormalized,function(col) min(col)))) + sapply(pol_unnormalized,function(col) min(col))
-
+  
   # getting Ri statistic
   
   numerator_components <- (shifted_mult_feasible - shifted_mult)^2
   denominator_components <- (pol - shifted_mult)^2
   
-  # get overall R for entire vector
   R_numerator <- sqrt(rowSums(numerator_components))
   
   R_denominator <- sqrt(rowSums(denominator_components))
@@ -237,31 +172,41 @@ set.seed(5)
   shifted[[t]] <- shifted_mult_data
   observed[[t]] <- obs_data
   R_statistic[[t]] <- R_statistic_df
-  }
-  
-  merged_shifted <- reduce(shifted, left_join, by = "newid")
-  merged_observed <- reduce(observed, left_join, by = "newid")
-  
-  covars_outcome <- covars_outcome |>
-    select(-c(starts_with("op_kg_2_year_time_"),
-       starts_with("pyr_kg_2_year_time_"),
-       starts_with("carb_kg_2_year_time_"),
-       starts_with("neo_kg_2_year_time_"),
-       starts_with("mn_kg_2_year_time_"),
-       starts_with("gly_kg_2_year_time_"),
-       starts_with("paraq_kg_2_year_time_")))
-  
-  shifted_mult_final <- covars_outcome |>
-    left_join(merged_shifted, by = c("newid" = "newid"))
-  
-  observed_final <- covars_outcome |>
-    left_join(merged_observed, by = c("newid" = "newid"))
-  
-  saveRDS(shifted_mult_final, paste0("data/shifted_data_convex_mult.rds"))
-  saveRDS(observed_final, paste0("data/observed_data.rds"))
-  saveRDS(prop_in_convex_hull, paste0("data/percent_in_convex_hull.rds"))
-  saveRDS(R_statistic, paste0("data/R_statistic.rds"))
-  
-  
-  
-  
+}
+
+merged_shifted <- reduce(shifted, left_join, by = "newid")
+merged_observed <- reduce(observed, left_join, by = "newid")
+
+covars_outcome <- covars_outcome |>
+  select(-c(starts_with("op_kg_2_year_time_"),
+            starts_with("pyr_kg_2_year_time_"),
+            starts_with("carb_kg_2_year_time_"),
+            starts_with("neo_kg_2_year_time_"),
+            starts_with("mn_kg_2_year_time_"),
+            starts_with("gly_kg_2_year_time_"),
+            starts_with("paraq_kg_2_year_time_")))
+
+shifted_mult_final <- covars_outcome |>
+  left_join(merged_shifted, by = c("newid" = "newid"))
+
+observed_final <- covars_outcome |>
+  left_join(merged_observed, by = c("newid" = "newid"))
+
+saveRDS(shifted_mult_final, paste0("data/shifted_data_convex_mult_paraq_shift.rds"))
+saveRDS(prop_in_convex_hull, paste0("data/percent_in_convex_hull_paraq_shift.rds"))
+saveRDS(R_statistic, paste0("data/R_statistic_paraq_shift.rds"))
+
+still_in_study_1 <- nrow(covars_outcome)
+still_in_study_2 <- nrow(covars_outcome |> filter(is.na(censor_time_2) == FALSE))
+still_in_study_3 <- nrow(covars_outcome |> filter(is.na(censor_time_3) == FALSE))
+still_in_study_4 <- nrow(covars_outcome |> filter(is.na(censor_time_4) == FALSE))
+still_in_study_5 <- nrow(covars_outcome |> filter(is.na(censor_time_5) == FALSE))
+
+
+not_in_hull_1 <- (1 - prop_in_convex_hull[[1]]) * still_in_study_1
+not_in_hull_2 <- (1 - prop_in_convex_hull[[2]]) * still_in_study_2
+not_in_hull_3 <- (1 - prop_in_convex_hull[[3]]) * still_in_study_3
+not_in_hull_4 <- (1 - prop_in_convex_hull[[4]]) * still_in_study_4
+not_in_hull_5 <- (1 - prop_in_convex_hull[[5]]) * still_in_study_5
+
+(not_in_hull_1 + not_in_hull_2 + not_in_hull_3 + not_in_hull_4 + not_in_hull_5)/(still_in_study_1 + still_in_study_2 + still_in_study_3 + still_in_study_4 + still_in_study_5)

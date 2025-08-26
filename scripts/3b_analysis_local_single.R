@@ -1,4 +1,6 @@
-#remotes::install_github("nt-williams/lmtp@local-riesznet")
+### NOTE: MUST INSTALL LOCAL-RIESZNET VERSION OF LMTP
+
+#remotes::install_github("nt-williams/lmtp@local-riesznet") # use discrete = FALSE!
 library(lmtp)
 library(mlr3extralearners)
 library(earth)
@@ -6,11 +8,7 @@ library(ranger)
 library(xgboost)
 library(tidyverse)
 
-norm01 <- function(x) {
-  (x - min(x)) / (max(x) - min(x))
-}
-
-data_original <- readRDS(paste0("data/longitudinal_data_aligned.rds")) |>
+data_original <- readRDS(here::here("data/longitudinal_data_aligned.rds")) |>
   mutate(censor_time_5 = case_when(mhtn_time_4 == 1 ~ 1,
                                    is.na(censor_time_5) ~ 0,
                                    TRUE ~ censor_time_5)) |>
@@ -26,19 +24,9 @@ A <- list(c("op_kg_2_year_time_1",
             "paraq_kg_2_year_time_1")
 )
 
-# data_original <- data_original |>
-#   mutate(across(
-#     all_of(unlist(A)),
-#     ~ pmin(., quantile(., 0.95, na.rm = TRUE))
-#   ))
-
-data_shifted_mult_all <- readRDS(paste0("data/longitudinal_data_aligned.rds")) |>
+data_shifted_mult_all <- readRDS(here::here("data/shifted_data_convex_mult_last_2_shift.rds")) |>
   mutate(conditional_time_1 = case_when(gly_kg_2_year_time_1 >= 25 & paraq_kg_2_year_time_1 >= 5 ~ 1, 
                                         TRUE ~ 0))  |>
-  mutate(gly_kg_2_year_time_1 = gly_kg_2_year_time_1 * 0.8, # shifting gly down by 20% 
-         paraq_kg_2_year_time_1 = paraq_kg_2_year_time_1 * 0.8# shifting paraq down by 20% 
-    
-  ) |>
   mutate(censor_time_1 = 1,
          censor_time_2 = 1,
          censor_time_3 = 1,
@@ -68,6 +56,7 @@ L <- list(
     "marcat_time_1",
     #"ipovcat_time_1",
     "ipovcat_2_time_1",
+    "ipovcat_3_time_1",
     "hhagwork_time_1",
     "work_cat_time_1")
 ) 
@@ -75,6 +64,7 @@ L <- list(
 learners <- list("mean", 
                  "glm",
                  "earth",
+                 "cv_glmnet",
                  "xgboost",
                  list("xgboost", 
                       min_child_weight = 5, 
@@ -98,14 +88,10 @@ data_shifted_mult_all <- data_shifted_mult_all |>
 
 run_lmtp <- function(data = data_original, shifted = NULL)
 {
-  conditional_df <- data |>
-    select(conditional_time_1,# paste0("censor_time_", 1:i)
-    ) |>
-    mutate(conditional_time_1 = as.logical(conditional_time_1))
-  
-  n <- nrow(data)
-  
-  conditional_matrix <- as.matrix(conditional_df)
+  conditional_matrix <- data |>
+    select(conditional_time_1) |>
+    mutate(conditional_time_1 = as.logical(conditional_time_1)) |>
+    as.matrix()
   
   res <- lmtp_tmle(data, 
                    trt = A,
@@ -119,7 +105,7 @@ run_lmtp <- function(data = data_original, shifted = NULL)
                    mtp = TRUE, 
                    learners_outcome = learners,
                    learners_trt = learners,
-                   folds = 10,
+                   folds = 20,
                    control = lmtp_control(#.learners_outcome_folds = 5,
                      #.learners_trt_folds = 5,
                      #.learners_conditional_folds = 5,
@@ -146,5 +132,5 @@ saveRDS(obs_all, here::here(paste0("results/", "local_obs.rds")))
 obs_all <- readRDS(here::here(paste0("results/", "local_obs.rds")))
 mult_all <- readRDS(here::here(paste0("results/", "local_mult.rds")))
 
-lmtp_contrast(mult_all, ref = obs_all)
+print(lmtp_contrast(mult_all, ref = obs_all))
 

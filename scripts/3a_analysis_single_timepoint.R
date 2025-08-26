@@ -8,15 +8,13 @@ library(xgboost)
 library(tidyverse)
 library(data.table)
 
-norm01 <- function(x) {
-  (x - min(x)) / (max(x) - min(x))
-}
-
+# reading in original data
 data_original <- readRDS(here::here(paste0("data/observed_data.rds"))) |>
   mutate(censor_time_5 = case_when(mhtn_time_4 == 1 ~ 1,
                                    is.na(censor_time_5) ~ 0,
                                    TRUE ~ censor_time_5))
 
+# baseline treatments
 A <- list(c("op_kg_2_year_time_1",
             "pyr_kg_2_year_time_1",
             "carb_kg_2_year_time_1",
@@ -26,47 +24,17 @@ A <- list(c("op_kg_2_year_time_1",
             "paraq_kg_2_year_time_1")
 )
 
-# data_original <- data_original |>
-#   mutate(across(
-#     all_of(unlist(A)),
-#     ~ pmin(., quantile(., 0.95, na.rm = TRUE))
-#   ))
-
-data_shifted_mult_all <- readRDS(here::here("data/shifted_data_convex_mult.rds")) |>
-  mutate(censor_time_1 = 1,
-         censor_time_2 = 1,
-         censor_time_3 = 1,
-         censor_time_4 = 1,
-         censor_time_5 = 1) |>
-  as.data.frame()
-
-# try including lagged variables?
+# baseline covariates
 W <- c("cham", 
        "momdl_age2", 
        "educat_bl_2", 
        "educat_bl_3", 
        "hbp_bl", 
        "diab_bl", 
-       "born_in_usa"#,
-       #"diabage_bl"#,
-       # "age_9y",
-       # #"marstat_9y",
-       # "marstat_9y_2",
-       # "marstat_9y_3",
-       # "marstat_9y_4",
-       # "marstat_9y_5",
-       # "marstat_9y_6",
-       # "marcat_9y",
-       # #"ipovcat_9y",
-       # "ipovcat_9y_2",
-       # "ipovcat_9y_3",
-       # "hhagwork_9y",
-       # #"work_cat_9y",
-       # "work_cat_9y_1",
-       # "work_cat_9y_2",
-       # "work_cat_9y_3"
+       "born_in_usa"
 )
 
+# time-varying covariates (essentially baseline in single timepoint)
 L <- list(
   c(
     "age_time_1",
@@ -79,13 +47,16 @@ L <- list(
     "marcat_time_1",
     #"ipovcat_time_1",
     "ipovcat_2_time_1",
+    "ipovcat_3_time_1",
     "hhagwork_time_1",
     "work_cat_time_1")
 ) 
 
+# learners -- is flexible
 learners <- list("mean", 
                  "glm",
                  "earth",
+                 "cv_glmnet",
                  "xgboost",
                  list("xgboost", 
                       min_child_weight = 5, 
@@ -99,11 +70,34 @@ learners <- list("mean",
                  "ranger"
 )
 
+for (s in c("all", "first_5", "last_2", "paraq")) # the different shifts of interest
+{
+  
+  # shifted data must have censoring set to 1 (observed) for all observations
+  if (s != "all")
+  {
+    data_shifted_mult <- readRDS(here::here(paste0("data/shifted_data_convex_mult_", s, "_shift.rds"))) |>
+      mutate(censor_time_1 = 1,
+             censor_time_2 = 1,
+             censor_time_3 = 1,
+             censor_time_4 = 1,
+             censor_time_5 = 1) |>
+      as.data.frame()
+  } else{
+    data_shifted_mult <- readRDS(here::here("data/shifted_data_convex_mult.rds")) |>
+      mutate(censor_time_1 = 1,
+             censor_time_2 = 1,
+             censor_time_3 = 1,
+             censor_time_4 = 1,
+             censor_time_5 = 1) |>
+      as.data.frame()
+  }
+
 data_original <- data_original |>
   select(unlist(A), starts_with("mhtn_time_"), unlist(L), W, starts_with("censor_time_")) |>
   as.data.frame()
 
-data_shifted_mult_all <- data_shifted_mult_all |>
+data_shifted_mult <- data_shifted_mult |>
   select(unlist(A), starts_with("mhtn_time_"), unlist(L), W, starts_with("censor_time_")) |>
   as.data.frame()
 
@@ -120,9 +114,10 @@ run_lmtp <- function(data = data_original, shifted = NULL)
                    mtp = TRUE, 
                    learners_outcome = learners,
                    learners_trt = learners,
-                   folds = 10,
+                   folds = 20,
                    control = lmtp_control(#.learners_outcome_folds = NULL,
                      #.learners_trt_folds = NULL,
+                     .discrete = FALSE,
                      .trim = 0.99
                    ))
   
@@ -131,13 +126,13 @@ run_lmtp <- function(data = data_original, shifted = NULL)
 
 
   set.seed(5)
-  mult_all <- run_lmtp(shifted = data_shifted_mult_all)
-  saveRDS(mult_all, here::here(paste0("results/", "mhtn_mult_shifting_all_20percent_single.rds")))
+  mult_all <- run_lmtp(shifted = data_shifted_mult)
+  saveRDS(mult_all, here::here(paste0("results/", paste0("mhtn_mult_shifting_", s, "_20percent_single.rds"))))
   
+  if (s == "all")
+  {
   set.seed(5)
   obs_all <- run_lmtp(shifted = NULL)
   saveRDS(obs_all, here::here(paste0("results/", "mhtn_obs_shifting_all_20percent_single.rds")))
-  
-  # set.seed(5)
-  # add_all <-run_lmtp(outcome_timepoint = time, shifted = data_shifted_add_all)
-  # saveRDS(add_all, here::here(paste0("results_longitudinal/", "mhtn_add_", time, "_years_observed_", ".rds")))
+  }
+}

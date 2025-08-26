@@ -195,3 +195,18 @@ observed_final <- covars_outcome |>
 saveRDS(shifted_mult_final, paste0("data/shifted_data_convex_mult_last_2_shift.rds"))
 saveRDS(prop_in_convex_hull, paste0("data/percent_in_convex_hull_last_2_shift.rds"))
 saveRDS(R_statistic, paste0("data/R_statistic_last_2_shift.rds"))
+
+still_in_study_1 <- nrow(covars_outcome)
+still_in_study_2 <- nrow(covars_outcome |> filter(is.na(censor_time_2) == FALSE))
+still_in_study_3 <- nrow(covars_outcome |> filter(is.na(censor_time_3) == FALSE))
+still_in_study_4 <- nrow(covars_outcome |> filter(is.na(censor_time_4) == FALSE))
+still_in_study_5 <- nrow(covars_outcome |> filter(is.na(censor_time_5) == FALSE))
+
+
+not_in_hull_1 <- (1 - prop_in_convex_hull[[1]]) * still_in_study_1
+not_in_hull_2 <- (1 - prop_in_convex_hull[[2]]) * still_in_study_2
+not_in_hull_3 <- (1 - prop_in_convex_hull[[3]]) * still_in_study_3
+not_in_hull_4 <- (1 - prop_in_convex_hull[[4]]) * still_in_study_4
+not_in_hull_5 <- (1 - prop_in_convex_hull[[5]]) * still_in_study_5
+
+(not_in_hull_1 + not_in_hull_2 + not_in_hull_3 + not_in_hull_4 + not_in_hull_5)/(still_in_study_1 + still_in_study_2 + still_in_study_3 + still_in_study_4 + still_in_study_5)

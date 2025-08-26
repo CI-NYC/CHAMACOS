@@ -282,7 +282,7 @@ data <- data |>
                                 is.na(age_18y) & is.na(age_9y) == FALSE ~ age_9y + 9, # approximation
                                 TRUE ~ age_18y),
             age_mc1 = case_when(is.na(bodyage_mc1) & is.na(age_18y) == FALSE ~ age_18y + 2, # approximation
-                                is.na(bodyage_mc1) & is.na(age_16y) == FALSE ~ age_18y + 4, # approximation
+                                is.na(bodyage_mc1) & is.na(age_16y) == FALSE ~ age_16y + 4, # approximation
                                 is.na(bodyage_mc1) & is.na(age_12y) == FALSE ~ age_12y + 8, # approximation
                                 is.na(bodyage_mc1) & is.na(age_10_5y) == FALSE ~ age_10_5y + 9.5, # approximation,
                                 is.na(bodyage_mc1) & is.na(age_9y) == FALSE ~ age_9y + 11, # approximation
@@ -304,7 +304,7 @@ data <- data |>
            # marstat_14y_missing = ifelse(is.na(marstat_14y), 1, 0),
            # marstat_14y = ifelse(is.na(marstat_14y), marstat_12y, marstat_14y),
            marstat_16y_missing = ifelse(is.na(marstat_16y), 1, 0),
-           marstat_16y = ifelse(is.na(marstat_16y),marstat_12y, marstat_16y),
+           marstat_16y = ifelse(is.na(marstat_16y), marstat_12y, marstat_16y),
            marstat_18y_missing = ifelse(is.na(marstat_18y), 1, 0),
            marstat_18y = ifelse(is.na(marstat_18y), marstat_16y, marstat_18y),
            marstat_mc1_missing = ifelse(is.na(marstat_mc1), 1, 0),
@@ -341,17 +341,17 @@ data <- data |>
            hhagwork_9y_missing = ifelse(is.na(hhagwork_9y), 1, 0),
            hhagwork_9y = ifelse(is.na(hhagwork_9y), Mode(hhagwork_9y), hhagwork_9y),
            hhagwork_10_5y_missing = ifelse(is.na(hhagwork_10_5y), 1, 0),
-           hhagwork_10_5y = ifelse(is.na(hhagwork_10_5y), Mode(hhagwork_10_5y), hhagwork_10_5y),
+           hhagwork_10_5y = ifelse(is.na(hhagwork_10_5y), hhagwork_9y, hhagwork_10_5y),
            hhagwork_12y_missing = ifelse(is.na(hhagwork_12y), 1, 0),
-           hhagwork_12y = ifelse(is.na(hhagwork_12y), Mode(hhagwork_12y), hhagwork_12y),
+           hhagwork_12y = ifelse(is.na(hhagwork_12y), hhagwork_10_5y, hhagwork_12y),
            # hhagwork_14y_missing = ifelse(is.na(hhagwork_14y), 1, 0),
            # hhagwork_14y = ifelse(is.na(hhagwork_14y), Mode(hhagwork_14y), hhagwork_14y),
            hhagwork_16y_missing = ifelse(is.na(hhagwork_16y), 1, 0),
-           hhagwork_16y = ifelse(is.na(hhagwork_16y), Mode(hhagwork_16y), hhagwork_16y),
+           hhagwork_16y = ifelse(is.na(hhagwork_16y), hhagwork_12y, hhagwork_16y),
            hhagwork_18y_missing = ifelse(is.na(hhagwork_18y), 1, 0),
-           hhagwork_18y = ifelse(is.na(hhagwork_18y), Mode(hhagwork_18y), hhagwork_18y),
+           hhagwork_18y = ifelse(is.na(hhagwork_18y), hhagwork_16y, hhagwork_18y),
            hhagwork_mc1_missing = ifelse(is.na(hhagwork_mc1), 1, 0),
-           hhagwork_mc1 = ifelse(is.na(hhagwork_mc1), Mode(hhagwork_mc1), hhagwork_mc1),
+           hhagwork_mc1 = ifelse(is.na(hhagwork_mc1), hhagwork_18y, hhagwork_mc1),
            # work category at 12 years only binary -- making it binary at all other times
            work_cat_9y_missing = ifelse(is.na(work_cat_9y), 1, 0),
            work_cat_9y = ifelse(is.na(work_cat_9y), Mode(work_cat_9y), work_cat_9y),
