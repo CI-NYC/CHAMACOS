@@ -36,14 +36,7 @@ W <- c("cham",
 
 # time-varying covariates (essentially baseline in single timepoint)
 L <- list(
-  c(
-    "age_time_1",
-    #"marstat_time_1",
-    "marstat_2_time_1",
-    "marstat_3_time_1",
-    "marstat_4_time_1",
-    "marstat_5_time_1",
-    "marstat_6_time_1",
+  c("age_time_1",
     "marcat_time_1",
     #"ipovcat_time_1",
     "ipovcat_2_time_1",
@@ -57,16 +50,17 @@ learners <- list("mean",
                  "glm",
                  "earth",
                  "cv_glmnet",
+                 "bart",
                  "xgboost",
                  list("xgboost", 
-                      min_child_weight = 5, 
+                      min_child_weight = 2, 
                       id = "xgboost1"),
                  list("xgboost", 
-                      lambda = 5, 
-                      id = "xgboost1"),
+                      lambda = 2, 
+                      id = "xgboost2"),
                  list("xgboost", 
-                      lambda = 10, 
-                      id = "xgboost1"),
+                      alpha = 2, 
+                      id = "xgboost3"),
                  "ranger"
 )
 
@@ -117,8 +111,8 @@ run_lmtp <- function(data = data_original, shifted = NULL)
                    folds = 20,
                    control = lmtp_control(#.learners_outcome_folds = NULL,
                      #.learners_trt_folds = NULL,
-                     .discrete = FALSE,
-                     .trim = 0.99
+                     .discrete = FALSE#,
+                     #.trim = 0.99
                    ))
   
   res

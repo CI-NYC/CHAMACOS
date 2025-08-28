@@ -203,10 +203,10 @@ ggsave(plot = plots_combined, filename = here::here(paste0("plots/longitudinal_r
        width = 12, height = 9, dpi = 300, units = "in", device = pdf)
 
 contrasts_df_final <- contrasts_df_final |>
-  select(t, contrast, estimate, std.error, conf.low, conf.high)
+  select(t, contrast, estimate, std.error, conf.low, conf.high, type)
 
 combined_results_df_final <- combined_results_df_final |>
-  select(t, shift, estimate, std.error, conf.low, conf.high)
+  select(t, shift, estimate, std.error, conf.low, conf.high, grouping)
 
 write.csv(combined_results_df_final, here::here(paste0("results_csv/longitudinal_results_exposures.csv")))
 write.csv(contrasts_df_final, here::here(paste0("results_csv/longitudinal_contrasts_exposures.csv")))

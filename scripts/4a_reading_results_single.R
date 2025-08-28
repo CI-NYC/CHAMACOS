@@ -121,7 +121,7 @@ contrasts_df_final <- contrasts_df_final |>
                           type == "paraq" ~ "Paraquat Only"
                           ))
 
-contrast_plot <- ggplot(data = contrasts_df_final, aes(x = factor(type), y = estimate, color = type, group = type, shape = type)) +
+contrast_plot <- ggplot(data = contrasts_df_final, aes(x = factor(type), y = estimate, group = type)) +
   geom_point(position = position_dodge(width = 0.75)) + 
   geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.1, 
                 position = position_dodge(width = 0.75)) +
