@@ -125,13 +125,14 @@ contrast_plot <- ggplot(data = contrasts_df_final, aes(x = factor(type), y = est
   geom_point(position = position_dodge(width = 0.75)) + 
   geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.1, 
                 position = position_dodge(width = 0.75)) +
-  labs(x = "", y = "Risk Difference (v. Observed)", title = "") +
+  labs(x = "Pesticide Class Reduction", y = "Risk Difference (v. Observed)", title = "") +
   geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
   labs(color = "Reduction", shape = "Reduction") + 
   theme_minimal() +
   theme(
     legend.position =  "none",
-    plot.margin = unit(c(5.5, 5.5, 5.5, 9.5), "pt")
+    plot.margin = unit(c(5.5, 5.5, 5.5, 9.5), "pt"),
+    text = element_text(size = 18)
   )
 
 ggsave(plot = contrast_plot, filename = here::here(paste0("plots/reducing_exposures_single_timepoint.pdf")),

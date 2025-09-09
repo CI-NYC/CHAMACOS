@@ -2,8 +2,6 @@ library(JuliaCall)
 library(readr)
 library(tidyverse)
 
-set.seed(5)
-
   # reading in covariates and outcomes data
   covars_outcome <- readRDS(paste0("data/longitudinal_data_aligned.rds"))
 
@@ -39,6 +37,7 @@ set.seed(5)
   pol <- pol_unnormalized |>
     select(-newid)
   
+  # exploratory plots
   if (t == 1)
   {  
   pol_tmp <- pol |>
@@ -46,12 +45,12 @@ set.seed(5)
            "pyrethroids" = "pyr_kg_2_year_time_1",
            "carbamates" = "carb_kg_2_year_time_1",
            "neonicotinoids" = "neo_kg_2_year_time_1",
-           "maganese" = "mn_kg_2_year_time_1",
+           "manganese" = "mn_kg_2_year_time_1",
            "glyphosates" = "gly_kg_2_year_time_1",
            "paraquats" = "paraq_kg_2_year_time_1"
            )
     
-  corr <- cor(pol_tmp)
+  corr <- cor(pol_tmp, method = "spearman")
   
   pdf(file = paste0("plots/correlation_matrix_plot_", t, ".pdf"))
   corr_plot <- corrplot::corrplot(corr, 
@@ -69,11 +68,18 @@ set.seed(5)
   pol_tmp_long <- pol_tmp |>
     pivot_longer(cols = everything(), 
                  names_to = "variable", 
-                 values_to = "value")
+                 values_to = "value") |>
+    mutate(variable = factor(variable, levels = c("organophosphates",
+                                                  "pyrethroids",
+                                                  "carbamates",
+                                                  "neonicotinoids",
+                                                  "manganese",
+                                                  "glyphosates",
+                                                  "paraquats")))
   
   density <- ggplot(pol_tmp_long, aes(x = value)) +
     geom_density(fill = "salmon2", alpha = 0.5) +
-    facet_wrap(~ variable, scales = "free_x", nrow = 2) +
+    facet_wrap(~ variable, scales = "free", nrow = 2) +
     theme_minimal() +
     labs(title = "", 
          x = "Value",
@@ -111,7 +117,9 @@ set.seed(5)
   
   abs(julia_call("boundary", ch, unlist(pol[1, ])) - unlist(pol[1, ]))
   
-  # checking to see how much numerical tolerance to add (0.005 per exposure seems safe?)
+  # checking to see how much numerical tolerance to add (0.006 per exposure seems safe?)
+  ## WHY DO WE DO THIS? The convex hull is an approximation and is not perfect -- even when points should be identical, sometimes there is 
+  ## numeric "error" so we have to allow for some tolerance. A value of 0.006 seems safe based on the following exploratory analysis
   for (i in 1:nrow(pol))
   {
     if (i > 1)
@@ -143,16 +151,17 @@ set.seed(5)
   
   #ex <- pol[c(25, 36, 117), ] # example 3 points
   
+  # for each row, this identifies the feasible shift
   for (i in 1:nrow(pol)) {
     shifted_mult_feasible[i, ] <- julia_call("boundary", ch, unlist(shifted_mult[i, ]))
   }
   
-  # proportion of the feasible shift "equal" (allow for some error) to the desired shift
+  # proportion of the feasible shift "equal" (allow for some error -- the 0.006 value we discussed previously) to the desired shift
   within_error_range <- (abs(shifted_mult_feasible - shifted_mult) <= 0.006)
   
   within_error_range[is.na(within_error_range)] <- TRUE
   
-  # if any value is FALSE in a row, then all values in that row set to FALSE (the entire row needs to meet the tolerance)
+  # if any value is FALSE in a row, then all values in that row set to FALSE (the entire row needs to meet the numerical tolerance)
   within_error_range[] <- !rowSums(!within_error_range)
   
   # if within tolerance, then use the ideal shift (feasible shift is likely numeric error)
@@ -211,13 +220,14 @@ set.seed(5)
     cbind(numerator_components, denominator_components)
   
   # only returning shifted for those in the convex hull (within the specified error + range); for those that fall outside, use observed treatment values
-  specified_01_range <- as.matrix(cbind(R_numerator, R_numerator, R_numerator, R_numerator, R_numerator, R_numerator, R_numerator))
+  specified_01_range <- as.matrix(replicate(7, R_numerator))
   
-  in_hull <- within_error_range | specified_01_range <= 0.1
+  # points can be in hull if they are within the specified error range (numeric tolerance) or if their R numerator value is less than 0.1, indicating low extrapolation
+  in_hull_or_extrapolated <- within_error_range | specified_01_range <= 0.1
   
-  shifted_final <- ifelse(in_hull, shifted_mult, as.matrix(pol))
+  shifted_final <- ifelse(in_hull_or_extrapolated, shifted_mult, as.matrix(pol))
   
-  prop <- mean(in_hull[, 1])
+  prop <- mean(in_hull_or_extrapolated[, 1])
   
   prop_in_convex_hull[[t]] <- prop
   

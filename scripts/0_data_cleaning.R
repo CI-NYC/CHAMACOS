@@ -60,7 +60,7 @@ data <- data %>%
                                      first_obs == "18y" & experienced_outcome_flag == 0 ~ 3,
                                      first_obs == "mc1" & (is.na(mhtn_mc1)) ~ 1,
                                      first_obs == "mc1" & experienced_outcome_flag == 0 ~ 2,
-                                     TRUE ~ 0 # never censored
+                                     TRUE ~ 0 # never censored or had outcome
   ))
   # censoring when one of the following occurs: outcome is missing, number of years observed falls below 1 or is missing
   # mutate(censored_period = case_when(first_obs == "10_5y" & (is.na(mhtn_10_5y)) ~ 0,

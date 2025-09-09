@@ -9,7 +9,7 @@ pol <- readRDS("data/pol_time_1.rds") |>
          "pyrethroids" = "pyr_kg_2_year_time_1",
          "carbamates" = "carb_kg_2_year_time_1",
          "neonicotinoids" = "neo_kg_2_year_time_1",
-         "maganese" = "mn_kg_2_year_time_1",
+         "manganese" = "mn_kg_2_year_time_1",
          "glyphosates" = "gly_kg_2_year_time_1",
          "paraquats" = "paraq_kg_2_year_time_1"
   )

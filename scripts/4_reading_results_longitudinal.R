@@ -124,17 +124,17 @@ contrasts_df_final <- rbind(contrasts_df_final, contrasts_df)
 
 combined_results_df_final <- combined_results_df_final |>
   mutate(grouping = case_when(shift == "obs" ~ "Observed",
-                              shift == "mult" & type == "all" ~ "Reducing all pesticides",
-                              shift == "mult" & type == "first_5" ~ "Reducing first 5 pesticides",
-                              shift == "mult" & type == "last_2" ~ "Reducing last 2 pesticides",
+                              shift == "mult" & type == "all" ~ "Reducing all pesticide classes",
+                              shift == "mult" & type == "first_5" ~ "Reducing first 5 pesticide classes",
+                              shift == "mult" & type == "last_2" ~ "Reducing last 2 pesticide classes",
                               shift == "mult" & type == "paraq" ~ "Reducing paraquat only"
                               )) |>
   select(-type) |>
   distinct() |>
   mutate(grouping = factor(grouping, levels = c("Observed", 
-                                                "Reducing all pesticides",
-                                                "Reducing first 5 pesticides",
-                                                "Reducing last 2 pesticides",
+                                                "Reducing all pesticide classes",
+                                                "Reducing first 5 pesticide classes",
+                                                "Reducing last 2 pesticide classes",
                                                 "Reducing paraquat only")))
 
 base_plot <- ggplot() +
@@ -159,22 +159,23 @@ results_plot <- base_plot +
   scale_shape_manual(values = c(16, 17, 15, 18, 19)) + 
   scale_y_continuous(labels = label_number(accuracy = 0.001)) +
   theme(
-    plot.title = element_text(hjust = 0, size = 14),
+    plot.title = element_text(hjust = 0, size = 15),
     legend.position =  c(0.2, 0.85),
     legend.key.height = unit(0.8, "lines"),
     legend.key.width = unit(5, "lines"),
-    legend.text = element_text(size = 9, margin = margin(r = 4)),
-    legend.title = element_text(face = "bold", size = 9),
+    legend.text = element_text(size = 12, margin = margin(r = 4)),
+    legend.title = element_text(face = "bold", size = 14),
     legend.background = element_rect(fill = "white", color = "black", size = 0.25), 
     legend.margin = margin(t = 2, r = 2, b = 2, l = 2),
     legend.spacing.y = unit(0.1, "cm"),
-    plot.margin = unit(c(5.5, 5.5, 5.5, 9.5), "pt")
+    plot.margin = unit(c(5.5, 5.5, 5.5, 9.5), "pt"),
+    text = element_text(size = 18)
   )
 
 contrasts_df_final <- contrasts_df_final |>
   mutate(type = case_when(type == "all" ~ "All Pesticides",
-                          type == "first_5" ~ "First 5 Pesticides",
-                          type == "last_2" ~ "Last 2 Pesticides",
+                          type == "first_5" ~ "First 5 Pesticide Classes",
+                          type == "last_2" ~ "Last 2 Pesticide Classes",
                           type == "paraq" ~ "Paraquat Only"
   ))
 
@@ -190,7 +191,8 @@ contrast_plot <- ggplot(data = contrasts_df_final, aes(x = factor(t), y = estima
   theme_minimal() +
   theme(
     legend.position = "none",
-    plot.margin = unit(c(5.5, 5.5, 5.5, 9.5), "pt")
+    plot.margin = unit(c(5.5, 5.5, 5.5, 9.5), "pt"),
+    text = element_text(size = 18)
   )
 
 plots_combined <- ggarrange(results_plot, 

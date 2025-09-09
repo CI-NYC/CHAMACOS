@@ -8,12 +8,25 @@ library(ranger)
 library(xgboost)
 library(tidyverse)
 
-data_original <- readRDS(here::here("data/longitudinal_data_aligned.rds")) |>
+# constructing our conditionals (to whom do we want to target our effect?)
+get_conditional <- readRDS(here::here("data/longitudinal_data_aligned.rds"))  |>
+  mutate(conditional_time_1 = case_when(gly_kg_2_year_time_1 >= 25 | paraq_kg_2_year_time_1 >= 5 ~ 1, 
+                                        TRUE ~ 0),
+         conditional2_time_1 = case_when(gly_kg_2_year_time_1 >= 25 & paraq_kg_2_year_time_1 >= 5 ~ 1, 
+                                        TRUE ~ 0)) 
+
+data_original <- readRDS(here::here(paste0("data/observed_data.rds"))) |>
   mutate(censor_time_5 = case_when(mhtn_time_4 == 1 ~ 1,
                                    is.na(censor_time_5) ~ 0,
                                    TRUE ~ censor_time_5)) |>
-  mutate(conditional_time_1 = case_when(gly_kg_2_year_time_1 >= 25 & paraq_kg_2_year_time_1 >= 5 ~ 1, 
-                                        TRUE ~ 0)) 
+  mutate(conditional_time_1 = get_conditional$conditional_time_1,
+         conditional2_time_1 = get_conditional$conditional2_time_1)
+
+gly_func <- ecdf(data_original$gly_kg_2_year_time_1)
+gly_func(25)
+
+paraq_func <- ecdf(data_original$paraq_kg_2_year_time_1)
+paraq_func(5)
 
 A <- list(c("op_kg_2_year_time_1",
             "pyr_kg_2_year_time_1",
@@ -25,8 +38,8 @@ A <- list(c("op_kg_2_year_time_1",
 )
 
 data_shifted_mult_all <- readRDS(here::here("data/shifted_data_convex_mult_last_2_shift.rds")) |>
-  mutate(conditional_time_1 = case_when(gly_kg_2_year_time_1 >= 25 & paraq_kg_2_year_time_1 >= 5 ~ 1, 
-                                        TRUE ~ 0))  |>
+  mutate(conditional_time_1 = get_conditional$conditional_time_1,
+         conditional2_time_1 = get_conditional$conditional2_time_1) |>
   mutate(censor_time_1 = 1,
          censor_time_2 = 1,
          censor_time_3 = 1,
@@ -45,14 +58,7 @@ W <- c("cham",
 )
 
 L <- list(
-  c(
-    "age_time_1",
-    #"marstat_time_1",
-    "marstat_2_time_1",
-    "marstat_3_time_1",
-    "marstat_4_time_1",
-    "marstat_5_time_1",
-    "marstat_6_time_1",
+  c("age_time_1",
     "marcat_time_1",
     #"ipovcat_time_1",
     "ipovcat_2_time_1",
@@ -65,33 +71,43 @@ learners <- list("mean",
                  "glm",
                  "earth",
                  "cv_glmnet",
+                 "bart",
                  "xgboost",
                  list("xgboost", 
-                      min_child_weight = 5, 
+                      min_child_weight = 2, 
                       id = "xgboost1"),
                  list("xgboost", 
-                      lambda = 5, 
-                      id = "xgboost1"),
+                      lambda = 2, 
+                      id = "xgboost2"),
                  list("xgboost", 
-                      lambda = 10, 
-                      id = "xgboost1"),
+                      alpha = 2, 
+                      id = "xgboost3"),
                  "ranger"
 )
 
 data_original <- data_original |>
-  select(unlist(A), starts_with("mhtn_time_"), unlist(L), W, starts_with("censor_time_"), "conditional_time_1") |>
+  select(unlist(A), starts_with("mhtn_time_"), unlist(L), W, starts_with("censor_time_"), starts_with("conditional")) |>
   as.data.frame()
 
 data_shifted_mult_all <- data_shifted_mult_all |>
-  select(unlist(A), starts_with("mhtn_time_"), unlist(L), W, starts_with("censor_time_"), "conditional_time_1") |>
+  select(unlist(A), starts_with("mhtn_time_"), unlist(L), W, starts_with("censor_time_"), starts_with("conditional")) |>
   as.data.frame()
 
-run_lmtp <- function(data = data_original, shifted = NULL)
+run_lmtp <- function(data = data_original, shifted = NULL, conditional = "")
 {
+  if (conditional == "")
+  {
   conditional_matrix <- data |>
     select(conditional_time_1) |>
     mutate(conditional_time_1 = as.logical(conditional_time_1)) |>
     as.matrix()
+  } else if (conditional == "_and")
+  {
+    conditional_matrix <- data |>
+      select(conditional2_time_1) |>
+      mutate(conditional2_time_1 = as.logical(conditional2_time_1)) |>
+      as.matrix()
+  }
   
   res <- lmtp_tmle(data, 
                    trt = A,
@@ -113,24 +129,25 @@ run_lmtp <- function(data = data_original, shifted = NULL)
                      .patience = 10,
                      .epochs = 50L,
                      .batch_size = 8,
-                     .learning_rate = 0.01,
-                     .weight_decay = 1
+                     .learning_rate = 0.001,
+                     .weight_decay = 0.0001
                    ))
   
   res
 }
 
+for (i in c(""))
+{
+set.seed(5)
+mult_all <- run_lmtp(shifted = data_shifted_mult_all, conditional = i)
+saveRDS(mult_all, here::here(paste0("results/", "local_mult", i, ".rds")))
 
 set.seed(5)
-mult_all <- run_lmtp(shifted = data_shifted_mult_all)
-saveRDS(mult_all, here::here(paste0("results/", "local_mult.rds")))
+obs_all <- run_lmtp(shifted = NULL, conditional = i)
+saveRDS(obs_all, here::here(paste0("results/", "local_obs", i, ".rds")))
 
-set.seed(5)
-obs_all <- run_lmtp(shifted = NULL)
-saveRDS(obs_all, here::here(paste0("results/", "local_obs.rds")))
-
-obs_all <- readRDS(here::here(paste0("results/", "local_obs.rds")))
-mult_all <- readRDS(here::here(paste0("results/", "local_mult.rds")))
+obs_all <- readRDS(here::here(paste0("results/", "local_obs", i, ".rds")))
+mult_all <- readRDS(here::here(paste0("results/", "local_mult", i, ".rds")))
 
 print(lmtp_contrast(mult_all, ref = obs_all))
-
+}

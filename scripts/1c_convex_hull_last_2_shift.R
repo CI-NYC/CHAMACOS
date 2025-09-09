@@ -2,8 +2,6 @@ library(JuliaCall)
 library(readr)
 library(tidyverse)
 
-set.seed(5)
-
 # reading in covariates and outcomes data
 covars_outcome <- readRDS(paste0("data/longitudinal_data_aligned.rds"))
 
@@ -18,7 +16,7 @@ for (t in 1:5)
 {
   set.seed(5)
   
-  # reading data, 359 observations non-missing at initial time
+  # reading data, 407 observations non-missing at initial time
   pol_unnormalized <- covars_outcome |>
     select(newid,
            paste0("op_kg_2_year_time_", t),
@@ -132,6 +130,11 @@ for (t in 1:5)
   R <- R_numerator/R_denominator
   R[!is.finite(R)] <- 0
   
+  R[R > 0.1] |> length()
+  R[R > 0] |> length()
+  
+  R_numerator[R_numerator > 0.1]
+  
   # get R for each pesticide
   R_components <- sqrt(numerator_components)/sqrt(denominator_components)
   R_components <- R_components |> mutate(across(where(is.numeric), ~ ifelse(is.finite(.), ., 0)))
@@ -146,13 +149,13 @@ for (t in 1:5)
     cbind(numerator_components, denominator_components)
   
   # only returning shifted for those in the convex hull (within the specified error + range); for those that fall outside, use observed treatment values
-  specified_01_range <- as.matrix(cbind(R_numerator, R_numerator, R_numerator, R_numerator, R_numerator, R_numerator, R_numerator))
+  specified_01_range <- as.matrix(replicate(7, R_numerator))
   
-  in_hull <- within_error_range | specified_01_range <= 0.1
+  in_hull_or_extrapolated <- within_error_range | specified_01_range <= 0.1
   
-  shifted_final <- ifelse(in_hull, shifted_mult, as.matrix(pol))
+  shifted_final <- ifelse(in_hull_or_extrapolated, shifted_mult, as.matrix(pol))
   
-  prop <- mean(in_hull[, 1])
+  prop <- mean(in_hull_or_extrapolated[, 1])
   
   prop_in_convex_hull[[t]] <- prop
   
@@ -203,10 +206,10 @@ still_in_study_4 <- nrow(covars_outcome |> filter(is.na(censor_time_4) == FALSE)
 still_in_study_5 <- nrow(covars_outcome |> filter(is.na(censor_time_5) == FALSE))
 
 
-not_in_hull_1 <- (1 - prop_in_convex_hull[[1]]) * still_in_study_1
-not_in_hull_2 <- (1 - prop_in_convex_hull[[2]]) * still_in_study_2
-not_in_hull_3 <- (1 - prop_in_convex_hull[[3]]) * still_in_study_3
-not_in_hull_4 <- (1 - prop_in_convex_hull[[4]]) * still_in_study_4
-not_in_hull_5 <- (1 - prop_in_convex_hull[[5]]) * still_in_study_5
+not_in_hull_or_extrapolated_1 <- (1 - prop_in_convex_hull[[1]]) * still_in_study_1
+not_in_hull_or_extrapolated_2 <- (1 - prop_in_convex_hull[[2]]) * still_in_study_2
+not_in_hull_or_extrapolated_3 <- (1 - prop_in_convex_hull[[3]]) * still_in_study_3
+not_in_hull_or_extrapolated_4 <- (1 - prop_in_convex_hull[[4]]) * still_in_study_4
+not_in_hull_or_extrapolated_5 <- (1 - prop_in_convex_hull[[5]]) * still_in_study_5
 
-(not_in_hull_1 + not_in_hull_2 + not_in_hull_3 + not_in_hull_4 + not_in_hull_5)/(still_in_study_1 + still_in_study_2 + still_in_study_3 + still_in_study_4 + still_in_study_5)
+(not_in_hull_or_extrapolated_1 + not_in_hull_or_extrapolated_2 + not_in_hull_or_extrapolated_3 + not_in_hull_or_extrapolated_4 + not_in_hull_or_extrapolated_5)/(still_in_study_1 + still_in_study_2 + still_in_study_3 + still_in_study_4 + still_in_study_5)

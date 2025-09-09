@@ -111,8 +111,8 @@ run_lmtp <- function(data = data_original, shifted = NULL)
                    folds = 20,
                    control = lmtp_control(#.learners_outcome_folds = NULL,
                      #.learners_trt_folds = NULL,
-                     .discrete = FALSE#,
-                     #.trim = 0.99
+                     .discrete = FALSE,
+                     .trim = 0.99
                    ))
   
   res
