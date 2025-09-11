@@ -17,7 +17,7 @@ A6 <- readRDS(here::here("results/mhtn_mult_shifting_gly_20percent_single.rds"))
 A7 <- readRDS(here::here("results/mhtn_mult_shifting_paraq_20percent_single.rds"))
 
 ## Observed (no intervention)
-OBS <- readRDS(here::here("results/", "mhtn_obs_shifting_all_20percent_single.rds"))
+OBS <- readRDS(here::here("results/mhtn_obs_shifting_all_20percent_single.rds"))
 
 # We can combine the estimates and eif values -> if this crosses 0, then we fail to reject the null hypothesis that there is no interactive effect
 A6A7$estimate - A6$estimate - A7$estimate + OBS$estimate
