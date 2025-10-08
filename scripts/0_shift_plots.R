@@ -34,13 +34,13 @@ data <- readRDS(here::here(paste0("data/observed_data.rds"))) |>
            "mn_kg_2_year_time_1",
            "gly_kg_2_year_time_1",
            "paraq_kg_2_year_time_1")) |>
-  rename("organophosphates" = "op_kg_2_year_time_1",
-         "pyrethroids" = "pyr_kg_2_year_time_1",
-         "carbamates" = "carb_kg_2_year_time_1",
-         "neonicotinoids" = "neo_kg_2_year_time_1",
-         "manganese" = "mn_kg_2_year_time_1",
-         "glyphosates" = "gly_kg_2_year_time_1",
-         "paraquats" = "paraq_kg_2_year_time_1"
+  rename("Organophosphates" = "op_kg_2_year_time_1",
+         "Pyrethroids" = "pyr_kg_2_year_time_1",
+         "Carbamates" = "carb_kg_2_year_time_1",
+         "Neonicotinoids" = "neo_kg_2_year_time_1",
+         "Manganese Fungicides" = "mn_kg_2_year_time_1",
+         "Glyphosate" = "gly_kg_2_year_time_1",
+         "Paraquat" = "paraq_kg_2_year_time_1"
   ) #|>
   # mutate(op_kg_2_year_time_1_mult = op_kg_2_year_time_1 * 0.8,
   #        pyr_kg_2_year_time_1_mult = pyr_kg_2_year_time_1 * 0.8,
@@ -60,13 +60,13 @@ data <- readRDS(here::here(paste0("data/observed_data.rds"))) |>
 
 data_mult <- data * 0.8
 data_add <- data |>
-  mutate(organophosphates = organophosphates + 0.1,
-         pyrethroids = pyrethroids + 0.1,
-         carbamates = carbamates + 0.1,
-         neonicotinoids = neonicotinoids + 0.1,
-         manganese = manganese + 0.1,
-         glyphosates = glyphosates + 0.1,
-         paraquats = paraquats + 0.1,
+  mutate(Organophosphates = Organophosphates + 0.1,
+         Pyrethroids = Pyrethroids + 0.1,
+         Carbamates = Carbamates + 0.1,
+         Neonicotinoids = Neonicotinoids + 0.1,
+         `Manganese Fungicides` = `Manganese Fungicides` + 0.1,
+         Glyphosate = Glyphosate + 0.1,
+         Paraquat = Paraquat + 0.1,
          )
 
 plot_list <- list()

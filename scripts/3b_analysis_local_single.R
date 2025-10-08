@@ -1,3 +1,5 @@
+# See https://beyondtheate.com for more information
+
 ### NOTE: MUST INSTALL LOCAL-RIESZNET VERSION OF LMTP
 
 #remotes::install_github("nt-williams/lmtp@local-riesznet") # use discrete = FALSE!
@@ -15,6 +17,7 @@ get_conditional <- readRDS(here::here("data/longitudinal_data_aligned.rds"))  |>
          conditional2_time_1 = case_when(gly_kg_2_year_time_1 >= 25 & paraq_kg_2_year_time_1 >= 5 ~ 1, 
                                         TRUE ~ 0)) 
 
+# reading in our data and setting up for a single timepoint exposure and outcome
 data_original <- readRDS(here::here(paste0("data/observed_data.rds"))) |>
   mutate(censor_time_5 = case_when(mhtn_time_4 == 1 ~ 1,
                                    is.na(censor_time_5) ~ 0,
@@ -22,12 +25,14 @@ data_original <- readRDS(here::here(paste0("data/observed_data.rds"))) |>
   mutate(conditional_time_1 = get_conditional$conditional_time_1,
          conditional2_time_1 = get_conditional$conditional2_time_1)
 
+# we should check what percentile these values correspond to in the data
 gly_func <- ecdf(data_original$gly_kg_2_year_time_1)
 gly_func(25)
 
 paraq_func <- ecdf(data_original$paraq_kg_2_year_time_1)
 paraq_func(5)
 
+# exposures
 A <- list(c("op_kg_2_year_time_1",
             "pyr_kg_2_year_time_1",
             "carb_kg_2_year_time_1",
@@ -37,6 +42,7 @@ A <- list(c("op_kg_2_year_time_1",
             "paraq_kg_2_year_time_1")
 )
 
+# our shifted data
 data_shifted_mult_all <- readRDS(here::here("data/shifted_data_convex_mult_last_2_shift.rds")) |>
   mutate(conditional_time_1 = get_conditional$conditional_time_1,
          conditional2_time_1 = get_conditional$conditional2_time_1) |>
@@ -47,7 +53,7 @@ data_shifted_mult_all <- readRDS(here::here("data/shifted_data_convex_mult_last_
          censor_time_5 = 1) |>
   as.data.frame()
 
-# try including lagged variables?
+# baseline covariates
 W <- c("cham", 
        "momdl_age2", 
        "educat_bl_2", 
@@ -57,6 +63,7 @@ W <- c("cham",
        "born_in_usa"
 )
 
+# time-varying covariates
 L <- list(
   c("age_time_1",
     "marcat_time_1",
@@ -67,6 +74,7 @@ L <- list(
     "work_cat_time_1")
 ) 
 
+# learners list -- is flexible 
 learners <- list("mean", 
                  "glm",
                  "earth",
@@ -93,6 +101,10 @@ data_shifted_mult_all <- data_shifted_mult_all |>
   select(unlist(A), starts_with("mhtn_time_"), unlist(L), W, starts_with("censor_time_"), starts_with("conditional")) |>
   as.data.frame()
 
+# checks that columns that are supposed to be identical are actually identical
+print(identical(data_original |> select(starts_with("mhtn_time_"), unlist(L), W, starts_with("conditional")), data_shifted_mult |> select(starts_with("mhtn_time_"), unlist(L), W)))
+
+# function to run TMLE  local lmtp code
 run_lmtp <- function(data = data_original, shifted = NULL, conditional = "")
 {
   if (conditional == "")

@@ -1,3 +1,5 @@
+# See https://beyondtheate.com for more information
+
 #remotes::install_github("nt-williams/lmtp@mlr3superlearner") -- use personal version
 library(lmtp)
 library(mlr3extralearners)
@@ -117,6 +119,8 @@ learners <- list("mean",
                  "ranger"
 )
 
+## We will loop through our different shifts and run each iteratively 
+
 for (s in c("all", "first_5", "last_2", "paraq")) # the different shifts of interest
 {
 
@@ -149,6 +153,7 @@ data_shifted_mult <- data_shifted_mult |>
   select(unlist(A), starts_with("mhtn_time_"), unlist(L), W, starts_with("censor_time_")) |>
   as.data.frame()
 
+# checks that columns that are supposed to be identical are actually identical
 print(identical(data_original |> select(starts_with("mhtn_time_"), unlist(L), W), data_shifted_mult |> select(starts_with("mhtn_time_"), unlist(L), W)))
 
 # function to longitudinally run TMLE lmtp code
@@ -160,7 +165,7 @@ run_lmtp <- function(data = data_original, shifted = NULL)
                    baseline = W, 
                    time_vary = L[1:i],
                    cens = paste0("censor_", c("time_1", "time_2", "time_3", "time_4", "time_5"))[1:i], 
-                   outcome_type  = ifelse(i == 1, "binomial", "survival"),
+                   outcome_type  = ifelse(i == 1, "binomial", "survival"), # for a single time point, use binomial; however, in the longitudinal setting, this is a survival problem
                    shifted = shifted, 
                    mtp = TRUE, # must be set to TRUE for continuous exposure
                    learners_outcome = learners,
@@ -169,13 +174,14 @@ run_lmtp <- function(data = data_original, shifted = NULL)
                    control = lmtp_control(#.learners_outcome_folds = NULL,
                                           #.learners_trt_folds = NULL,
                                           .discrete = FALSE,
-                                          .trim = 0.99
+                                          .trim = 0.99 # may want to truncate propensity scores further if there are extreme positivity issues
                    ))
   
   res
 }
 
-for (i in 5:1)
+# this loops through the time periods and runs the TMLE at each timepoint
+for (i in 1:5)
 {
   
   # running shift

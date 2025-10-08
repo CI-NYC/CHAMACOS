@@ -11,6 +11,7 @@ tidy.lmtp_survival <- function(x, ...) {
   out[, c(ncol(out), 1:ncol(out) - 1)]
 }
 
+# we can apply isotonic regression to ensure that estimates are monotonic (since we have a survival outcome)
 isotonic_projection <- function(x, alpha = 0.05) {
   cv <- abs(qnorm(p = alpha / 2))
   estim <- tidy.lmtp_survival(x)
@@ -183,7 +184,7 @@ contrast_plot <- ggplot(data = contrasts_df_final, aes(x = factor(t), y = estima
   geom_point(position = position_dodge(width = 0.75)) + 
   geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.1, 
                 position = position_dodge(width = 0.75)) +
-  labs(x = "Time", y = "Risk Difference (v. Observed)", title = "") +
+  labs(x = "Wave", y = "Risk Difference (v. Observed)", title = "") +
   geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
   labs(color = "Reduction", shape = "Reduction") + 
   scale_color_manual(values = c("#B22222", "#56B4E9", "#009E73", "#D55E00")) +

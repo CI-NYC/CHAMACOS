@@ -1,3 +1,5 @@
+# See https://beyondtheate.com for more information
+
 #remotes::install_github("nt-williams/lmtp@mlr3superlearner") -- use personal version
 
 library(lmtp)
@@ -64,6 +66,8 @@ learners <- list("mean",
                  "ranger"
 )
 
+## We will loop through our different shifts and run each iteratively 
+
 for (s in c("all", "first_5", "last_2", "paraq")) # the different shifts of interest
 {
   
@@ -112,7 +116,7 @@ run_lmtp <- function(data = data_original, shifted = NULL)
                    control = lmtp_control(#.learners_outcome_folds = NULL,
                      #.learners_trt_folds = NULL,
                      .discrete = FALSE,
-                     .trim = 0.99
+                     .trim = 0.99 # may want to truncate propensity scores further if there are extreme positivity issues
                    ))
   
   res

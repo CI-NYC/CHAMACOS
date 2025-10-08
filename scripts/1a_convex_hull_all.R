@@ -1,3 +1,8 @@
+#After you've installed Julia, you can install the package for convex hulls by:
+# 1. From a terminal enter julia
+# 2. ] add https://github.com/nt-williams/MTPConvexHull.jl.git
+
+
 library(JuliaCall)
 library(readr)
 library(tidyverse)
@@ -41,14 +46,14 @@ library(tidyverse)
   if (t == 1)
   {  
   pol_tmp <- pol |>
-    rename("organophosphates" = "op_kg_2_year_time_1",
-           "pyrethroids" = "pyr_kg_2_year_time_1",
-           "carbamates" = "carb_kg_2_year_time_1",
-           "neonicotinoids" = "neo_kg_2_year_time_1",
-           "manganese" = "mn_kg_2_year_time_1",
-           "glyphosates" = "gly_kg_2_year_time_1",
-           "paraquats" = "paraq_kg_2_year_time_1"
-           )
+    rename("Organophosphates" = "op_kg_2_year_time_1",
+           "Pyrethroids" = "pyr_kg_2_year_time_1",
+           "Carbamates" = "carb_kg_2_year_time_1",
+           "Neonicotinoids" = "neo_kg_2_year_time_1",
+           "Manganese Fungicides" = "mn_kg_2_year_time_1",
+           "Glyphosate" = "gly_kg_2_year_time_1",
+           "Paraquat" = "paraq_kg_2_year_time_1"
+    )
     
   corr <- cor(pol_tmp, method = "spearman")
   
@@ -61,7 +66,8 @@ library(tidyverse)
                      tl.col = "black",
                      diag = TRUE,             
                      addCoefasPercent = FALSE,
-                     tl.srt = 45
+                     tl.srt = 45,
+                     col.lim = c(0, 1)
                      )
   dev.off()
   
@@ -69,13 +75,13 @@ library(tidyverse)
     pivot_longer(cols = everything(), 
                  names_to = "variable", 
                  values_to = "value") |>
-    mutate(variable = factor(variable, levels = c("organophosphates",
-                                                  "pyrethroids",
-                                                  "carbamates",
-                                                  "neonicotinoids",
-                                                  "manganese",
-                                                  "glyphosates",
-                                                  "paraquats")))
+    mutate(variable = factor(variable, levels = c("Organophosphates",
+                                                  "Pyrethroids",
+                                                  "Carbamates",
+                                                  "Neonicotinoids",
+                                                  "Manganese Fungicides",
+                                                  "Glyphosate",
+                                                  "Paraquat")))
   
   density <- ggplot(pol_tmp_long, aes(x = value)) +
     geom_density(fill = "salmon2", alpha = 0.5) +

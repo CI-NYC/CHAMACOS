@@ -5,13 +5,13 @@ library(htmlwidgets)
 
 
 pol <- readRDS("data/pol_time_1.rds") |>
-  rename("organophosphates" = "op_kg_2_year_time_1",
-         "pyrethroids" = "pyr_kg_2_year_time_1",
-         "carbamates" = "carb_kg_2_year_time_1",
-         "neonicotinoids" = "neo_kg_2_year_time_1",
-         "manganese" = "mn_kg_2_year_time_1",
-         "glyphosates" = "gly_kg_2_year_time_1",
-         "paraquats" = "paraq_kg_2_year_time_1"
+  rename("Organophosphates" = "op_kg_2_year_time_1",
+         "Pyrethroids" = "pyr_kg_2_year_time_1",
+         "Carbamates" = "carb_kg_2_year_time_1",
+         "Neonicotinoids" = "neo_kg_2_year_time_1",
+         "Manganese Fungicides" = "mn_kg_2_year_time_1",
+         "Glyphosate" = "gly_kg_2_year_time_1",
+         "Paraquat" = "paraq_kg_2_year_time_1"
   )
 
 ## 2D Plots
