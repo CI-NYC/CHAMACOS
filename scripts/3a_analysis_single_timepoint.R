@@ -1,7 +1,6 @@
 # See https://beyondtheate.com for more information
 
-#remotes::install_github("nt-williams/lmtp@mlr3superlearner") -- use personal version
-
+#remotes::install_github("nt-williams/lmtp@mlr3superlearner")
 library(lmtp)
 library(mlr3extralearners)
 library(earth)
@@ -38,8 +37,7 @@ W <- c("cham",
 
 # time-varying covariates (essentially baseline in single timepoint)
 L <- list(
-  c("age_time_1",
-    "marcat_time_1",
+  c("marcat_time_1",
     #"ipovcat_time_1",
     "ipovcat_2_time_1",
     "ipovcat_3_time_1",
@@ -52,23 +50,27 @@ learners <- list("mean",
                  "glm",
                  "earth",
                  "cv_glmnet",
-                 "bart",
-                 "xgboost",
-                 list("xgboost", 
-                      min_child_weight = 2, 
-                      id = "xgboost1"),
-                 list("xgboost", 
-                      lambda = 2, 
-                      id = "xgboost2"),
-                 list("xgboost", 
-                      alpha = 2, 
-                      id = "xgboost3"),
+                 list("lightgbm", 
+                      min_sum_hessian_in_leaf = 10, 
+                      id = "lightgbm1"),
+                 list("lightgbm", 
+                      lambda_l2 = 10, 
+                      id = "lightgbm2"),
+                 list("lightgbm", 
+                      lambda_l1 = 10, 
+                      id = "lightgbm3"),
                  "ranger"
 )
 
+
 ## We will loop through our different shifts and run each iteratively 
 
-for (s in c("all", "first_5", "last_2", "paraq")) # the different shifts of interest
+for (s in c("all", 
+            "first_5", 
+            "last_2", 
+            "gly",
+            "paraq"
+            )) # the different shifts of interest
 {
   
   # shifted data must have censoring set to 1 (observed) for all observations

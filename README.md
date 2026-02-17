@@ -14,16 +14,16 @@ CHAMACOS Pesticide Use ReadME
         returned point might be slightly different than the original
         point due to numeric approximations
       - Therefore, allow for an up to 0.006 tolerance such that if ALL
-        variables of the feasible shifted point falls within 0.005 of
+        variables of the feasible shifted point falls within 0.006 of
         the expected shifted point, we still allow the expected
-        intervention/shift to occur
+        intervention/shift to occur (NOTE: this may depend on your data)
 
-- Files `1ab_R_statistic.R` and `1ac_plotting_comvex_hulls_2D_3D.R`
+- Files `1ab_R_statistic.R` and `1ac_plotting_convex_hulls_2D_3D.R`
   contain exploratory code looking at extrapolation and support
 
 - Files `2_analysis_longitudinal.R` and `3a_analysis_single_timepoint.R`
-  contain code to conduct longitudinal and single time point analyses,
-  respectively, on the shifted data
+  contain code to conduct longitudinal and single time point lmtp
+  analyses, respectively, on the shifted data
 
 Other Notes:
 

@@ -1,6 +1,7 @@
 #After you've installed Julia, you can install the package for convex hulls by:
 # 1. From a terminal enter julia
-# 2. ] add https://github.com/nt-williams/MTPConvexHull.jl.git
+# 2. ] 
+# 3. add https://github.com/nt-williams/MTPConvexHull.jl.git
 
 
 library(JuliaCall)
@@ -109,7 +110,7 @@ library(tidyverse)
   }
   
   # Change to correct path for user
-  options(JULIA_HOME = "/Users/si2426/.juliaup/bin")
+  options(JULIA_HOME = "/opt/homebrew/bin")
   
   julia <- julia_setup()
   
@@ -226,10 +227,10 @@ library(tidyverse)
     cbind(numerator_components, denominator_components)
   
   # only returning shifted for those in the convex hull (within the specified error + range); for those that fall outside, use observed treatment values
-  specified_01_range <- as.matrix(replicate(7, R_numerator))
+  specified_005_range <- as.matrix(replicate(7, R_numerator))
   
-  # points can be in hull if they are within the specified error range (numeric tolerance) or if their R numerator value is less than 0.1, indicating low extrapolation
-  in_hull_or_extrapolated <- within_error_range | specified_01_range <= 0.1
+  # points can be in hull if they are within the specified error range (numeric tolerance) or if their R numerator value is less than 0.05, indicating low extrapolation
+  in_hull_or_extrapolated <- within_error_range | specified_005_range <= 0.05
   
   shifted_final <- ifelse(in_hull_or_extrapolated, shifted_mult, as.matrix(pol))
   

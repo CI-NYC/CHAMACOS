@@ -8,3 +8,10 @@ results_longitudinal
 scripts/old
 lmtp
 plots/old
+data_initial_submission
+results*
+!results_csv
+CHAMACOS.Rproj
+test*
+Rplots.pdf
+*.html

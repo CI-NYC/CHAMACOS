@@ -2,7 +2,7 @@
 
 ### NOTE: MUST INSTALL LOCAL-RIESZNET VERSION OF LMTP
 
-#remotes::install_github("nt-williams/lmtp@local-riesznet") # use discrete = FALSE!
+#remotes::install_github("nt-williams/lmtp@local-riesznet")
 library(lmtp)
 library(mlr3extralearners)
 library(earth)
@@ -65,8 +65,7 @@ W <- c("cham",
 
 # time-varying covariates
 L <- list(
-  c("age_time_1",
-    "marcat_time_1",
+  c("marcat_time_1",
     #"ipovcat_time_1",
     "ipovcat_2_time_1",
     "ipovcat_3_time_1",
@@ -79,17 +78,15 @@ learners <- list("mean",
                  "glm",
                  "earth",
                  "cv_glmnet",
-                 "bart",
-                 "xgboost",
-                 list("xgboost", 
-                      min_child_weight = 2, 
-                      id = "xgboost1"),
-                 list("xgboost", 
-                      lambda = 2, 
-                      id = "xgboost2"),
-                 list("xgboost", 
-                      alpha = 2, 
-                      id = "xgboost3"),
+                 list("lightgbm", 
+                      min_sum_hessian_in_leaf = 10, 
+                      id = "lightgbm1"),
+                 list("lightgbm", 
+                      lambda_l2 = 10, 
+                      id = "lightgbm2"),
+                 list("lightgbm", 
+                      lambda_l1 = 10, 
+                      id = "lightgbm3"),
                  "ranger"
 )
 
@@ -100,9 +97,6 @@ data_original <- data_original |>
 data_shifted_mult_all <- data_shifted_mult_all |>
   select(unlist(A), starts_with("mhtn_time_"), unlist(L), W, starts_with("censor_time_"), starts_with("conditional")) |>
   as.data.frame()
-
-# checks that columns that are supposed to be identical are actually identical
-print(identical(data_original |> select(starts_with("mhtn_time_"), unlist(L), W, starts_with("conditional")), data_shifted_mult |> select(starts_with("mhtn_time_"), unlist(L), W)))
 
 # function to run TMLE  local lmtp code
 run_lmtp <- function(data = data_original, shifted = NULL, conditional = "")
@@ -161,5 +155,20 @@ saveRDS(obs_all, here::here(paste0("results/", "local_obs", i, ".rds")))
 obs_all <- readRDS(here::here(paste0("results/", "local_obs", i, ".rds")))
 mult_all <- readRDS(here::here(paste0("results/", "local_mult", i, ".rds")))
 
-print(lmtp_contrast(mult_all, ref = obs_all))
+contrast <- lmtp_contrast(mult_all, ref = obs_all)
+
+print(contrast)
 }
+
+contrasts_df_final <- tibble(
+  shift = contrast$vals$shift,
+  ref = contrast$vals$ref,
+  estimate = contrast$vals$estimate,
+  std.error = contrast$vals$std.error,
+  conf.low = contrast$vals$conf.low,
+  conf.high = contrast$vals$conf.high,
+  p.value = contrast$vals$p.value,
+)
+
+write.csv(contrasts_df_final, here::here(paste0("results_csv/contrasts_local.csv")))
+

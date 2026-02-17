@@ -51,7 +51,7 @@ for (t in 1:5)
   }
   
   # Change to correct path for user
-  options(JULIA_HOME = "/Users/si2426/.juliaup/bin")
+  options(JULIA_HOME = "/opt/homebrew/bin")
   
   julia <- julia_setup()
   
@@ -149,9 +149,9 @@ for (t in 1:5)
     cbind(numerator_components, denominator_components)
   
   # only returning shifted for those in the convex hull (within the specified error + range); for those that fall outside, use observed treatment values
-  specified_01_range <- as.matrix(replicate(7, R_numerator))
+  specified_005_range <- as.matrix(replicate(7, R_numerator))
   
-  in_hull_or_extrapolated <- within_error_range | specified_01_range <= 0.1
+  in_hull_or_extrapolated <- within_error_range | specified_005_range <= 0.05
   
   shifted_final <- ifelse(in_hull_or_extrapolated, shifted_mult, as.matrix(pol))
   
