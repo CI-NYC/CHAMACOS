@@ -155,11 +155,13 @@ saveRDS(obs_all, here::here(paste0("results/", "local_obs", i, ".rds")))
 obs_all <- readRDS(here::here(paste0("results/", "local_obs", i, ".rds")))
 mult_all <- readRDS(here::here(paste0("results/", "local_mult", i, ".rds")))
 
+# calculate contrast between observed and shifted
 contrast <- lmtp_contrast(mult_all, ref = obs_all)
 
 print(contrast)
 }
 
+# saving contrast results to dataframe
 contrasts_df_final <- tibble(
   shift = contrast$vals$shift,
   ref = contrast$vals$ref,
@@ -170,5 +172,6 @@ contrasts_df_final <- tibble(
   p.value = contrast$vals$p.value,
 )
 
+# saving final contrast results to csv
 write.csv(contrasts_df_final, here::here(paste0("results_csv/contrasts_local.csv")))
 

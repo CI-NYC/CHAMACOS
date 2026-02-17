@@ -22,8 +22,8 @@ OBS <- readRDS(here::here("results/mhtn_obs_shifting_all_20percent_single.rds"))
 # We can combine the estimates and eif values -> if this crosses 0, then we fail to reject the null hypothesis that there is no interactive effect
 A6A7$estimate - A6$estimate - A7$estimate + OBS$estimate
 
-#Estimate: 0.01
-#Std. error: 0.01
-#95% Conf. int.: -0.01, 0.02
+#Estimate: 0.004
+#Std. error: 0.006
+#95% Conf. int.: -0.008, 0.017
 
 # We find that the confidence interval crosses the null. Therefore, we fail to reject the null hypothesis that there is no interactive effect
