@@ -2,7 +2,7 @@
 
 ### NOTE: MUST INSTALL LOCAL-RIESZNET VERSION OF LMTP
 
-#remotes::install_github("nt-williams/lmtp@local-riesznet")
+#remotes::install_github("shodaiinose/lmtp@local-riesznet") -- use discrete = FALSE
 library(lmtp)
 library(mlr3extralearners)
 library(earth)
@@ -163,6 +163,7 @@ print(contrast)
 
 # saving contrast results to dataframe
 contrasts_df_final <- tibble(
+  theta = contrast$vals$theta,
   shift = contrast$vals$shift,
   ref = contrast$vals$ref,
   estimate = contrast$vals$estimate,
