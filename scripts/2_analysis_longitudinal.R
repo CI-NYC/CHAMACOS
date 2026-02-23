@@ -178,7 +178,7 @@ run_lmtp <- function(data = data_original, shifted = NULL)
 }
 
 # this loops through the time periods and runs the TMLE at each timepoint
-for (i in 5:5)
+for (i in 1:5)
 {
   
   # running shift
